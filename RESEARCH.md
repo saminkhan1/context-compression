@@ -64,11 +64,11 @@ nested data and CSV can be better for uniform flat tables.
 
 Implementation consequence: TOON is treated as an external baseline instead of
 being reimplemented here. The local selector stays smaller and focuses on
-stdlib-backed compact JSON, columnar/codebook JSON, CSV/TSV, and the codebook
-row formats that win in the current corpus. In this repo:
+stdlib-backed compact JSON, columnar/codebook JSON, CSV/TSV, and typed CSV/TSV
+for offline evaluation. In this repo:
 
-- `sample-repetitive.json`: `typed-codebook-row`, `1067` exact tokenizer tokens
-  vs raw `4102` on `gpt-5.5`.
+- `sample-repetitive.json`: default safe-tier `column-json`, `1419` exact
+  tokenizer tokens vs raw `4102` on `gpt-5.5`.
 - Hugging Face `julien-c/titanic-survival` JSON fixture: `codebook-json`, `20791`
   exact tokenizer tokens vs raw `71983` on `gpt-5.5`.
 

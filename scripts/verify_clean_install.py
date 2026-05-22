@@ -63,19 +63,15 @@ def main() -> int:
 
 
 def copy_checkout(source: Path, destination: Path) -> None:
-    destination.mkdir(parents=True, exist_ok=True)
-    for path in source.rglob("*"):
-        relative = path.relative_to(source)
-        if should_ignore(path, relative):
-            if path.is_dir():
-                continue
-            continue
-        target = destination / relative
-        if path.is_dir():
-            target.mkdir(parents=True, exist_ok=True)
-        else:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(path, target)
+    def ignore(directory: str, names: list[str]) -> set[str]:
+        base = Path(directory)
+        return {
+            name
+            for name in names
+            if should_ignore(base / name, (base / name).relative_to(source))
+        }
+
+    shutil.copytree(source, destination, ignore=ignore)
 
 
 def should_ignore(path: Path, relative: Path) -> bool:
@@ -83,7 +79,7 @@ def should_ignore(path: Path, relative: Path) -> bool:
         return True
     if path.suffix in IGNORE_SUFFIXES:
         return True
-    return any(relative == prefix or prefix in relative.parents for prefix in IGNORE_RELATIVE_PREFIXES)
+    return any(relative == prefix or relative.is_relative_to(prefix) for prefix in IGNORE_RELATIVE_PREFIXES)
 
 
 def run(name: str, command: list[str], cwd: Path) -> None:

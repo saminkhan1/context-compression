@@ -61,8 +61,8 @@ class ContextOptimizerHookTests(unittest.TestCase):
         context = output["hookSpecificOutput"]["additionalContext"]
         self.assertIn("hf-julien-c-titanic-survival.json", context)
         if "token_counter=tiktoken" in context:
-            self.assertIn("Selected format: codebook-json", context)
-            self.assertIn("Tokens: 20791 vs raw 71983 (71.1% savings)", context)
+            self.assertIn("Selected format: column-json", context)
+            self.assertIn("Tokens: 21460 vs raw 71983 (70.2% savings)", context)
         elif "token_counter=deterministic-fallback" in context:
             self.assertRegex(context, r"Selected format: (compact-json|csv|tsv)")
             self.assertIn("Estimated tokens:", context)

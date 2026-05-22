@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -156,6 +156,8 @@ async function selectedReadPath(
     return results.map((result) => result.read_path!);
   } catch {
     return [];
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
   }
 }
 

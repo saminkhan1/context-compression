@@ -232,7 +232,7 @@ def validate_hook_rewrite(stdout: str) -> None:
         raise SystemExit("hook smoke did not rewrite the cat command")
     if "sample-repetitive.json" in command:
         raise SystemExit("hook smoke command still reads the original source")
-    if ".codex/context-cache/" not in command or ".typed-codebook-row.txt" not in command:
+    if ".codex/context-cache/" not in command or ".column-json.txt" not in command:
         raise SystemExit("hook smoke command does not read the expected optimized sidecar")
     if "additionalContext" in hook_output:
         raise SystemExit("hook smoke should remain invisible by default; unexpected additionalContext")

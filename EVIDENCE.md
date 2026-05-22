@@ -198,22 +198,22 @@ The latest local downloaded-corpus report is
 
 | Files | Raw tokens | Optimized tokens | Saved tokens | Savings | Saved / call | Saved / 100k calls |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 28 | 17,496,442 | 15,162,406 | 2,334,036 | 13.3% | $11.670180 | $1,167,018.00 |
+| 28 | 17,496,442 | 15,171,483 | 2,324,959 | 13.3% | $11.624795 | $1,162,479.50 |
 
 Local processing time for that run:
 
 | Load ms | Candidate ms | Token-count ms | Total ms | Saved tokens / ms |
 | ---: | ---: | ---: | ---: | ---: |
-| 354.5 | 8,386.8 | 54,369.8 | 66,012.4 | 35.4 |
+| 333.8 | 5,760.1 | 41,342.4 | 47,436.9 | 49.0 |
 
 By format:
 
 | Format | Files | Raw tokens | Optimized tokens | Saved tokens | Savings |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| CSV | 7 | 4,110,345 | 3,798,428 | 311,917 | 7.6% |
-| JSON | 7 | 4,793,580 | 3,782,764 | 1,010,816 | 21.1% |
-| JSONL | 7 | 4,478,352 | 3,782,764 | 695,588 | 15.5% |
-| TSV | 7 | 4,114,165 | 3,798,450 | 315,715 | 7.7% |
+| CSV | 7 | 4,110,345 | 3,800,680 | 309,665 | 7.5% |
+| JSON | 7 | 4,793,580 | 3,785,039 | 1,008,541 | 21.0% |
+| JSONL | 7 | 4,478,352 | 3,785,039 | 693,313 | 15.5% |
+| TSV | 7 | 4,114,165 | 3,800,725 | 313,440 | 7.6% |
 
 By source dataset:
 
@@ -221,7 +221,7 @@ By source dataset:
 | --- | ---: | ---: | ---: | --- |
 | GitHub top repos | 4 | 239,352 | 29.1% | codebook-json x4 |
 | Amazon reviews | 4 | 35,615 | 15.4% | raw x1, typed-csv x3 |
-| GitHub notebook code/doc | 4 | 679,140 | 5.3% | typed-codebook-row x4 |
+| GitHub notebook code/doc | 4 | 670,063 | 5.2% | raw x1, typed-csv x3 |
 | LogHub 2.0 | 4 | 67,545 | 41.5% | codebook-json x4 |
 | OpenAssistant | 4 | 494,177 | 22.0% | codebook-json x4 |
 | SQuAD | 4 | 731,871 | 72.7% | codebook-json x4 |
@@ -232,20 +232,13 @@ CSV/TSV should still no-op when they are already near-optimal, but JSON-native
 codebooks can beat them when the tabular files contain heavily quoted repeated
 nested cells.
 The source rollup is intentionally included because the aggregate hides weak
-slices: code/documentation records save only 5.3%, while QA/tabular and LogHub
+slices: code/documentation records save only 5.2%, while QA/tabular and LogHub
 2.0 sources save much more. Product claims should report this distribution
 rather than only the overall 13.3%.
 
-Matched external baseline in the latest report:
-
-| Baseline | Files | Missing | Tokens | Savings | W/T/L vs selector |
-| --- | ---: | ---: | ---: | ---: | --- |
-| TOON via `@toon-format/toon@2.3.0` with safe raw fallback | 28 | 0 | 17,864,941 | -2.1% | 0/0/28 |
-
-Interpretation: this is not a claim that TOON is generally weak. It is a
-matched-corpus result using the same tokenizer, decoder-instruction accounting,
-and a raw fallback for official TOON round-trip failures. On this corpus, the
-selector beats that safe TOON comparator on every file.
+The latest refreshed report did not include an external baseline command. Use
+the `--baseline-command` flow above before making TOON, ONTO, or other external
+codec comparison claims.
 
 The report now also records a latency break-even ceiling: the maximum
 downstream input-token throughput where local preprocessing still pays off in

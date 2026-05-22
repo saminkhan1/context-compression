@@ -4,8 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import csv
-import io
 import json
 import sys
 from collections import defaultdict
@@ -98,7 +96,7 @@ def rows_from_record_context(record: dict[str, Any], source_kind: str, source_va
     context = extract_data_context(str(record.get("input", "")))
     context_format = str(record.get("context_format") or ("raw" if record.get("variant") == "raw" else ""))
     if context_format == "raw":
-        value = parse_raw_context(context, source_kind)
+        value = hook.decode_candidate_value("raw", context, source_kind)
     elif context_format:
         candidate_text = strip_decoder_instructions(context)
         value = hook.decode_candidate_value(context_format, candidate_text, source_kind)
@@ -118,18 +116,6 @@ def extract_data_context(input_text: str) -> str:
     return input_text[len(prefix) : input_text.index(separator)]
 
 
-def parse_raw_context(context: str, source_kind: str) -> Any:
-    if source_kind == "json":
-        return json.loads(context)
-    if source_kind == "jsonl":
-        return [json.loads(line) for line in context.splitlines() if line.strip()]
-    if source_kind in {"csv", "tsv"}:
-        delimiter = "\t" if source_kind == "tsv" else ","
-        reader = csv.DictReader(io.StringIO(context), delimiter=delimiter)
-        return [dict(row) for row in reader]
-    raise ValueError(f"unsupported source kind {source_kind}")
-
-
 def strip_decoder_instructions(context: str) -> str:
     _, separator, rest = context.partition("\n")
     if not separator:
@@ -139,17 +125,7 @@ def strip_decoder_instructions(context: str) -> str:
 
 def infer_optimized_value(context: str, source_kind: str, source_value: Any) -> Any:
     candidate_text = strip_decoder_instructions(context)
-    candidates = [
-        "compact-json",
-        "column-json",
-        "codebook-json",
-        "csv",
-        "tsv",
-        "typed-csv",
-        "typed-tsv",
-        "codebook-row",
-        "typed-codebook-row",
-    ]
+    candidates = sorted(set().union(*hook.CANDIDATE_TIERS.values()) - {"raw"})
     for candidate in candidates:
         try:
             value = hook.decode_candidate_value(candidate, candidate_text, source_kind)

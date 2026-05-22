@@ -9,6 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import benchmark
+import hook
 from scripts.verify_evidence import validate_benchmark_smoke, validate_hook_rewrite
 
 
@@ -133,10 +134,10 @@ class BenchmarkTests(unittest.TestCase):
             self.assertEqual(manifest["name"], "rawcopy")
             self.assertEqual(manifest["command_template"], "cp {input} {output}")
             self.assertEqual(len(manifest["files"]), 1)
-            self.assertEqual(manifest["files"][0]["source_sha256"], benchmark.sha256_file(corpus / "toy.json"))
+            self.assertEqual(manifest["files"][0]["source_sha256"], hook.sha256_file(corpus / "toy.json"))
             self.assertEqual(
                 manifest["files"][0]["output_sha256"],
-                benchmark.sha256_file(generated_dir / "rawcopy" / "toy.json.txt"),
+                hook.sha256_file(generated_dir / "rawcopy" / "toy.json.txt"),
             )
             self.assertEqual(report["totals"]["external_baselines"]["rawcopy"]["files_available"], 1)
             self.assertTrue((generated_dir / "rawcopy" / "toy.json.txt").exists())
@@ -274,7 +275,7 @@ class BenchmarkTests(unittest.TestCase):
                         "hookEventName": "PreToolUse",
                         "permissionDecision": "allow",
                         "updatedInput": {
-                            "command": "cat -- /repo/.codex/context-cache/sample-repetitive.abc.typed-codebook-row.txt"
+                            "command": "cat -- /repo/.codex/context-cache/sample-repetitive.abc.column-json.txt"
                         },
                     }
                 }
@@ -301,7 +302,7 @@ class BenchmarkTests(unittest.TestCase):
                         "hookSpecificOutput": {
                             "hookEventName": "PreToolUse",
                             "updatedInput": {
-                                "command": "cat -- /repo/.codex/context-cache/sample-repetitive.abc.typed-codebook-row.txt"
+                                "command": "cat -- /repo/.codex/context-cache/sample-repetitive.abc.column-json.txt"
                             },
                             "additionalContext": "not invisible",
                         }

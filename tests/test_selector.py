@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import hook
 import verify_selector_report
 
 
@@ -47,7 +48,7 @@ class SelectorCliTests(unittest.TestCase):
             persisted = json.loads(report_out.read_text())
             result = report["results"][0]
             self.assertTrue(Path(result["output_path"]).exists())
-            self.assertEqual(result["output_sha256"], verify_selector_report.sha256_file(Path(result["output_path"])))
+            self.assertEqual(result["output_sha256"], hook.sha256_file(Path(result["output_path"])))
             self.assertEqual(verify_selector_report.validate_report(report, check_files=True), [])
 
         self.assertEqual(report["schema_version"], "context-selector/v1")
@@ -314,6 +315,7 @@ class SelectorCliTests(unittest.TestCase):
         self.assertIn("read_path", result_properties)
         self.assertIn("output_path", result_properties)
         self.assertIn("output_sha256", result_properties)
+        self.assertIn("candidate_tier", policy_required)
         self.assertIn("min_saved_tokens", policy_required)
 
     def assert_selector_contract(self, report: dict[str, object]) -> None:

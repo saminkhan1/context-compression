@@ -1,28 +1,28 @@
 {
-  "generated_at": "2026-05-21T21:42:51+00:00",
+  "generated_at": "2026-05-22T01:48:33+00:00",
   "corpus": "data/benchmark-corpus",
   "corpus_fingerprint": {
-    "manifest_sha256": "8d4783790f6c6ceae35e6f8667c69d832cedca4cc13f50132b25b55fc9f26605",
+    "manifest_sha256": "b5c6d37899170f72692b3cc2a705d187a7af789f3ab6a69ccad923a43be92c08",
     "files": [
       {
         "file": "github-top-repos.csv",
-        "bytes": 637821,
-        "sha256": "e2094eeef3b257926355419d6790b512e94b3cf6b4a0fb2440cadd57f02b87d1"
+        "bytes": 637820,
+        "sha256": "864dbce71db9790a85afdd55aebb22a1a5630b4830edf80a4461914a8bb29426"
       },
       {
         "file": "github-top-repos.json",
-        "bytes": 788075,
-        "sha256": "f8d75d69a5bda6eacbc4ed6d65d89e4fb80f11204cb54b88d28d3b49c228dbe9"
+        "bytes": 788074,
+        "sha256": "e019c415046f8e9cbd94e2d3285bb2a49e4c63355e6b6added66f09930e5115b"
       },
       {
         "file": "github-top-repos.jsonl",
-        "bytes": 645735,
-        "sha256": "f396c7299fd786d2fc82b419e7403251f88f79b0d6ce5d2aa9c77ef488eaa59d"
+        "bytes": 645734,
+        "sha256": "4d8f980a77f2015618d4822cd0f11071ee4d251c7d004883ad99c42e15b50fc1"
       },
       {
         "file": "github-top-repos.tsv",
-        "bytes": 637543,
-        "sha256": "11fe7966ce134fe7a2335a24c160d91a499a54299782cba8a04faed824789507"
+        "bytes": 637542,
+        "sha256": "e1f5e6858d330f16dd0dbf4c1833dfbed0f38035231dbf43573e5dae8bec7bdc"
       },
       {
         "file": "hf-amazon-reviews.csv",
@@ -158,83 +158,71 @@
   "pricing": {
     "input_price_per_1m": 5.0,
     "monthly_calls": 100000,
-    "provider_input_tokens_per_second": 1500.0
+    "provider_input_tokens_per_second": 0.0
   },
-  "baseline_dirs": {
-    "toon": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon"
-  },
-  "baseline_provenance": {
-    "toon": {
-      "source": "command",
-      "path": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon",
-      "command_template": "/opt/homebrew/bin/npm exec --yes --package @toon-format/toon@2.3.0 -- node scripts/toon_baseline.mjs --fallback-raw-on-fail {input} {output}",
-      "manifest_path": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/baseline-provenance.json"
-    }
-  },
+  "baseline_dirs": {},
+  "baseline_provenance": {},
+  "candidate_tier": "advanced",
   "totals": {
     "files": 28,
     "raw_tokens": 17496442,
-    "optimized_tokens": 15162406,
-    "token_delta": 2334036,
-    "savings_ratio": 0.1334006079636077,
-    "per_call_input_cost_saved": 11.67018,
-    "monthly_input_cost_saved": 1167018.0,
+    "optimized_tokens": 15171483,
+    "token_delta": 2324959,
+    "savings_ratio": 0.13288181677166136,
+    "per_call_input_cost_saved": 11.624795,
+    "monthly_input_cost_saved": 1162479.5,
     "by_extension": {
       "csv": {
         "files": 7,
         "raw_tokens": 4110345,
-        "optimized_tokens": 3798428,
-        "token_delta": 311917,
+        "optimized_tokens": 3800680,
+        "token_delta": 309665,
         "best_formats": {
           "codebook-json": 5,
-          "raw": 1,
-          "typed-codebook-row": 1
+          "raw": 2
         },
-        "savings_ratio": 0.0758858441323052,
-        "per_call_input_cost_saved": 1.559585,
-        "monthly_input_cost_saved": 155958.5
+        "savings_ratio": 0.07533795824924672,
+        "per_call_input_cost_saved": 1.548325,
+        "monthly_input_cost_saved": 154832.5
       },
       "json": {
         "files": 7,
         "raw_tokens": 4793580,
-        "optimized_tokens": 3782764,
-        "token_delta": 1010816,
+        "optimized_tokens": 3785039,
+        "token_delta": 1008541,
         "best_formats": {
           "codebook-json": 5,
-          "typed-codebook-row": 1,
-          "typed-csv": 1
+          "typed-csv": 2
         },
-        "savings_ratio": 0.21086870355767506,
-        "per_call_input_cost_saved": 5.05408,
-        "monthly_input_cost_saved": 505408.0
+        "savings_ratio": 0.21039411045606832,
+        "per_call_input_cost_saved": 5.042705,
+        "monthly_input_cost_saved": 504270.5
       },
       "jsonl": {
         "files": 7,
         "raw_tokens": 4478352,
-        "optimized_tokens": 3782764,
-        "token_delta": 695588,
+        "optimized_tokens": 3785039,
+        "token_delta": 693313,
         "best_formats": {
           "codebook-json": 5,
-          "typed-codebook-row": 1,
-          "typed-csv": 1
+          "typed-csv": 2
         },
-        "savings_ratio": 0.15532231499444438,
-        "per_call_input_cost_saved": 3.47794,
-        "monthly_input_cost_saved": 347794.0
+        "savings_ratio": 0.15481431562324713,
+        "per_call_input_cost_saved": 3.466565,
+        "monthly_input_cost_saved": 346656.5
       },
       "tsv": {
         "files": 7,
         "raw_tokens": 4114165,
-        "optimized_tokens": 3798450,
-        "token_delta": 315715,
+        "optimized_tokens": 3800725,
+        "token_delta": 313440,
         "best_formats": {
           "codebook-json": 5,
-          "typed-codebook-row": 1,
-          "typed-csv": 1
+          "typed-csv": 2
         },
-        "savings_ratio": 0.07673853625219212,
-        "per_call_input_cost_saved": 1.578575,
-        "monthly_input_cost_saved": 157857.5
+        "savings_ratio": 0.07618556863907987,
+        "per_call_input_cost_saved": 1.5672,
+        "monthly_input_cost_saved": 156720.0
       }
     },
     "by_source": {
@@ -266,14 +254,15 @@
       "hf-code-doc": {
         "files": 4,
         "raw_tokens": 12851724,
-        "optimized_tokens": 12172584,
-        "token_delta": 679140,
+        "optimized_tokens": 12181661,
+        "token_delta": 670063,
         "best_formats": {
-          "typed-codebook-row": 4
+          "raw": 1,
+          "typed-csv": 3
         },
-        "savings_ratio": 0.05284427209921408,
-        "per_call_input_cost_saved": 3.3957,
-        "monthly_input_cost_saved": 339570.0
+        "savings_ratio": 0.052137985534080875,
+        "per_call_input_cost_saved": 3.350315,
+        "monthly_input_cost_saved": 335031.5
       },
       "hf-loghub-2": {
         "files": 4,
@@ -325,33 +314,19 @@
       }
     },
     "latency": {
-      "load_milliseconds": 354.4702079743729,
-      "candidate_generation_milliseconds": 8386.826209018182,
-      "token_count_milliseconds": 54369.82637811161,
-      "total_milliseconds": 66012.40295799653,
-      "tokens_saved_per_millisecond": 35.35753730227241,
+      "load_milliseconds": 333.8267120416276,
+      "candidate_generation_milliseconds": 5760.138706013095,
+      "token_count_milliseconds": 41342.38787196227,
+      "total_milliseconds": 47436.94400395907,
+      "tokens_saved_per_millisecond": 49.01156785744798,
       "break_even": {
-        "max_provider_input_tokens_per_second_for_break_even": 35357.537302272416,
-        "projected_input_latency_saved_milliseconds": 1556024.0,
-        "projected_net_latency_saved_milliseconds": 1490011.5970420034,
-        "projected_break_even": true
+        "max_provider_input_tokens_per_second_for_break_even": 49011.56785744798,
+        "projected_input_latency_saved_milliseconds": null,
+        "projected_net_latency_saved_milliseconds": null,
+        "projected_break_even": null
       }
     },
-    "external_baselines": {
-      "toon": {
-        "files_available": 28,
-        "files_missing": 0,
-        "raw_tokens": 17496442,
-        "baseline_tokens": 17864941,
-        "token_delta": -368499,
-        "wins_vs_selector": 0,
-        "ties_vs_selector": 0,
-        "losses_vs_selector": 28,
-        "savings_ratio": -0.021061367791234353,
-        "per_call_input_cost_saved": -1.842495,
-        "monthly_input_cost_saved": -184249.5
-      }
-    },
+    "external_baselines": {},
     "candidate_ablation": {
       "codebook-json": {
         "files_available": 28,
@@ -359,53 +334,39 @@
         "raw_tokens": 17496442,
         "candidate_tokens": 16406096,
         "token_delta": 1090346,
-        "rank_sum": 58,
+        "rank_sum": 50,
         "rank_best": 1,
-        "rank_worst": 5,
+        "rank_worst": 4,
         "savings_ratio": 0.062318155885636634,
-        "average_rank": 2.0714285714285716,
+        "average_rank": 1.7857142857142858,
         "per_call_input_cost_saved": 5.45173,
         "monthly_input_cost_saved": 545173.0
       },
-      "typed-codebook-row": {
-        "files_available": 18,
-        "wins": 4,
-        "raw_tokens": 15158590,
-        "candidate_tokens": 14374358,
-        "token_delta": 784232,
-        "rank_sum": 47,
-        "rank_best": 1,
-        "rank_worst": 5,
-        "savings_ratio": 0.05173515478682384,
-        "average_rank": 2.611111111111111,
-        "per_call_input_cost_saved": 3.92116,
-        "monthly_input_cost_saved": 392116.0
-      },
       "typed-csv": {
         "files_available": 22,
-        "wins": 3,
+        "wins": 6,
         "raw_tokens": 15329678,
         "candidate_tokens": 14532768,
         "token_delta": 796910,
-        "rank_sum": 73,
+        "rank_sum": 61,
         "rank_best": 1,
-        "rank_worst": 7,
+        "rank_worst": 5,
         "savings_ratio": 0.051984784024817744,
-        "average_rank": 3.3181818181818183,
+        "average_rank": 2.772727272727273,
         "per_call_input_cost_saved": 3.98455,
         "monthly_input_cost_saved": 398455.0
       },
       "raw": {
         "files_available": 28,
-        "wins": 1,
+        "wins": 2,
         "raw_tokens": 17496442,
         "candidate_tokens": 17496442,
         "token_delta": 0,
-        "rank_sum": 148,
+        "rank_sum": 123,
         "rank_best": 1,
-        "rank_worst": 10,
+        "rank_worst": 8,
         "savings_ratio": 0.0,
-        "average_rank": 5.285714285714286,
+        "average_rank": 4.392857142857143,
         "per_call_input_cost_saved": 0.0,
         "monthly_input_cost_saved": 0.0
       },
@@ -415,11 +376,11 @@
         "raw_tokens": 15329678,
         "candidate_tokens": 14541860,
         "token_delta": 787818,
-        "rank_sum": 88,
+        "rank_sum": 72,
         "rank_best": 2,
-        "rank_worst": 8,
+        "rank_worst": 6,
         "savings_ratio": 0.05139168611369397,
-        "average_rank": 4.0,
+        "average_rank": 3.272727272727273,
         "per_call_input_cost_saved": 3.93909,
         "monthly_input_cost_saved": 393909.0
       },
@@ -429,27 +390,13 @@
         "raw_tokens": 17496442,
         "candidate_tokens": 17476598,
         "token_delta": 19844,
-        "rank_sum": 114,
+        "rank_sum": 100,
         "rank_best": 2,
-        "rank_worst": 7,
+        "rank_worst": 6,
         "savings_ratio": 0.0011341734508078843,
-        "average_rank": 4.071428571428571,
+        "average_rank": 3.5714285714285716,
         "per_call_input_cost_saved": 0.09922,
         "monthly_input_cost_saved": 9922.0
-      },
-      "codebook-row": {
-        "files_available": 24,
-        "wins": 0,
-        "raw_tokens": 17325354,
-        "candidate_tokens": 17875160,
-        "token_delta": -549806,
-        "rank_sum": 158,
-        "rank_best": 3,
-        "rank_worst": 9,
-        "savings_ratio": -0.03173418563337869,
-        "average_rank": 6.583333333333333,
-        "per_call_input_cost_saved": -2.74903,
-        "monthly_input_cost_saved": -274903.0
       },
       "compact-json": {
         "files_available": 28,
@@ -457,11 +404,11 @@
         "raw_tokens": 17496442,
         "candidate_tokens": 17927812,
         "token_delta": -431370,
-        "rank_sum": 188,
+        "rank_sum": 156,
         "rank_best": 3,
-        "rank_worst": 10,
+        "rank_worst": 8,
         "savings_ratio": -0.024654726943912367,
-        "average_rank": 6.714285714285714,
+        "average_rank": 5.571428571428571,
         "per_call_input_cost_saved": -2.15685,
         "monthly_input_cost_saved": -215685.0
       },
@@ -471,11 +418,11 @@
         "raw_tokens": 17496442,
         "candidate_tokens": 18175682,
         "token_delta": -679240,
-        "rank_sum": 207,
-        "rank_best": 5,
-        "rank_worst": 10,
+        "rank_sum": 173,
+        "rank_best": 4,
+        "rank_worst": 8,
         "savings_ratio": -0.03882160727306729,
-        "average_rank": 7.392857142857143,
+        "average_rank": 6.178571428571429,
         "per_call_input_cost_saved": -3.3962,
         "monthly_input_cost_saved": -339620.0
       },
@@ -485,11 +432,11 @@
         "raw_tokens": 17333717,
         "candidate_tokens": 18022962,
         "token_delta": -689245,
-        "rank_sum": 181,
-        "rank_best": 5,
-        "rank_worst": 10,
+        "rank_sum": 151,
+        "rank_best": 4,
+        "rank_worst": 8,
         "savings_ratio": -0.03976325447104046,
-        "average_rank": 7.541666666666667,
+        "average_rank": 6.291666666666667,
         "per_call_input_cost_saved": -3.446225,
         "monthly_input_cost_saved": -344622.5
       }
@@ -499,7 +446,7 @@
     {
       "file": "data/benchmark-corpus/github-top-repos.csv",
       "kind": "csv",
-      "bytes": 637821,
+      "bytes": 637820,
       "raw_tokens": 203946,
       "best": {
         "candidate": "codebook-json",
@@ -533,16 +480,6 @@
           "monthly_input_cost_saved": 15060.0
         },
         {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 180992,
-          "payload_tokens": 180965,
-          "instruction_tokens": 27,
-          "token_delta": 22954,
-          "savings_ratio": 0.11254940033146028,
-          "per_call_input_cost_saved": 0.11477,
-          "monthly_input_cost_saved": 11477.0
-        },
-        {
           "candidate": "compact-json",
           "total_tokens": 185252,
           "payload_tokens": 185248,
@@ -551,16 +488,6 @@
           "savings_ratio": 0.09166151824502565,
           "per_call_input_cost_saved": 0.09347,
           "monthly_input_cost_saved": 9347.0
-        },
-        {
-          "candidate": "codebook-row",
-          "total_tokens": 188540,
-          "payload_tokens": 188522,
-          "instruction_tokens": 18,
-          "token_delta": 15406,
-          "savings_ratio": 0.07553960362056623,
-          "per_call_input_cost_saved": 0.07703,
-          "monthly_input_cost_saved": 7703.0
         },
         {
           "candidate": "raw",
@@ -613,37 +540,25 @@
           "monthly_input_cost_saved": -4795.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/github-top-repos.csv.txt",
-          "bytes": 643424,
-          "total_tokens": 173722,
-          "token_delta": 30224,
-          "savings_ratio": 0.14819609112215978,
-          "per_call_input_cost_saved": 0.15112,
-          "monthly_input_cost_saved": 15112.0
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 4.982541999197565,
-        "candidate_generation_milliseconds": 103.4213329985505,
-        "token_count_milliseconds": 650.3146229952108,
-        "total_milliseconds": 784.9840420021792,
-        "tokens_saved_per_millisecond": 72.13395046296088,
+        "load_milliseconds": 4.9924580089282244,
+        "candidate_generation_milliseconds": 69.9265830044169,
+        "token_count_milliseconds": 512.1194150124211,
+        "total_milliseconds": 587.0712080068188,
+        "tokens_saved_per_millisecond": 96.45167268932445,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 72133.95046296089,
-          "projected_input_latency_saved_milliseconds": 37749.333333333336,
-          "projected_net_latency_saved_milliseconds": 36964.34929133116,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 96451.67268932446,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
     {
       "file": "data/benchmark-corpus/github-top-repos.json",
       "kind": "json",
-      "bytes": 788075,
+      "bytes": 788074,
       "raw_tokens": 233167,
       "best": {
         "candidate": "codebook-json",
@@ -687,16 +602,6 @@
           "monthly_input_cost_saved": 26174.0
         },
         {
-          "candidate": "codebook-row",
-          "total_tokens": 184458,
-          "payload_tokens": 184440,
-          "instruction_tokens": 18,
-          "token_delta": 48709,
-          "savings_ratio": 0.20890177426479734,
-          "per_call_input_cost_saved": 0.243545,
-          "monthly_input_cost_saved": 24354.5
-        },
-        {
           "candidate": "csv",
           "total_tokens": 208330,
           "payload_tokens": 208325,
@@ -727,37 +632,25 @@
           "monthly_input_cost_saved": 0.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/github-top-repos.json.txt",
-          "bytes": 692224,
-          "total_tokens": 201052,
-          "token_delta": 32115,
-          "savings_ratio": 0.13773389887934398,
-          "per_call_input_cost_saved": 0.160575,
-          "monthly_input_cost_saved": 16057.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 4.431083005329128,
-        "candidate_generation_milliseconds": 85.62633299879963,
-        "token_count_milliseconds": 417.63324900966836,
-        "total_milliseconds": 541.9510830033687,
-        "tokens_saved_per_millisecond": 164.14027536770706,
+        "load_milliseconds": 4.014542006189004,
+        "candidate_generation_milliseconds": 59.07541699707508,
+        "token_count_milliseconds": 332.3271660192404,
+        "total_milliseconds": 395.4399999929592,
+        "tokens_saved_per_millisecond": 224.95448108836703,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 164140.27536770704,
-          "projected_input_latency_saved_milliseconds": 59304.0,
-          "projected_net_latency_saved_milliseconds": 58762.04891699663,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 224954.48108836703,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
     {
       "file": "data/benchmark-corpus/github-top-repos.jsonl",
       "kind": "jsonl",
-      "bytes": 645735,
+      "bytes": 645734,
       "raw_tokens": 180876,
       "best": {
         "candidate": "codebook-json",
@@ -811,16 +704,6 @@
           "monthly_input_cost_saved": 0.0
         },
         {
-          "candidate": "codebook-row",
-          "total_tokens": 184458,
-          "payload_tokens": 184440,
-          "instruction_tokens": 18,
-          "token_delta": -3582,
-          "savings_ratio": -0.01980362237112718,
-          "per_call_input_cost_saved": -0.01791,
-          "monthly_input_cost_saved": -1791.0
-        },
-        {
           "candidate": "csv",
           "total_tokens": 208330,
           "payload_tokens": 208325,
@@ -841,37 +724,25 @@
           "monthly_input_cost_saved": -13909.5
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/github-top-repos.jsonl.txt",
-          "bytes": 692224,
-          "total_tokens": 201052,
-          "token_delta": -20176,
-          "savings_ratio": -0.11154603153541653,
-          "per_call_input_cost_saved": -0.10088,
-          "monthly_input_cost_saved": -10088.0
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 3.752666998479981,
-        "candidate_generation_milliseconds": 85.79304200247861,
-        "token_count_milliseconds": 387.1117090093321,
-        "total_milliseconds": 510.9726249938831,
-        "tokens_saved_per_millisecond": 71.75531174578857,
+        "load_milliseconds": 3.4115419985027984,
+        "candidate_generation_milliseconds": 58.11516700487118,
+        "token_count_milliseconds": 303.1433749565622,
+        "total_milliseconds": 364.68529199191835,
+        "tokens_saved_per_millisecond": 100.53874067620067,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 71755.31174578858,
-          "projected_input_latency_saved_milliseconds": 24443.333333333332,
-          "projected_net_latency_saved_milliseconds": 23932.36070833945,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 100538.74067620067,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
     {
       "file": "data/benchmark-corpus/github-top-repos.tsv",
       "kind": "tsv",
-      "bytes": 637543,
+      "bytes": 637542,
       "raw_tokens": 204429,
       "best": {
         "candidate": "codebook-json",
@@ -905,16 +776,6 @@
           "monthly_input_cost_saved": 15301.5
         },
         {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 180992,
-          "payload_tokens": 180965,
-          "instruction_tokens": 27,
-          "token_delta": 23437,
-          "savings_ratio": 0.1146461607697538,
-          "per_call_input_cost_saved": 0.117185,
-          "monthly_input_cost_saved": 11718.5
-        },
-        {
           "candidate": "compact-json",
           "total_tokens": 185252,
           "payload_tokens": 185248,
@@ -923,16 +784,6 @@
           "savings_ratio": 0.09380763003292096,
           "per_call_input_cost_saved": 0.095885,
           "monthly_input_cost_saved": 9588.5
-        },
-        {
-          "candidate": "codebook-row",
-          "total_tokens": 188540,
-          "payload_tokens": 188522,
-          "instruction_tokens": 18,
-          "token_delta": 15889,
-          "savings_ratio": 0.07772380630928097,
-          "per_call_input_cost_saved": 0.079445,
-          "monthly_input_cost_saved": 7944.5
         },
         {
           "candidate": "typed-csv",
@@ -985,30 +836,18 @@
           "monthly_input_cost_saved": -4553.5
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/github-top-repos.tsv.txt",
-          "bytes": 643424,
-          "total_tokens": 173722,
-          "token_delta": 30707,
-          "savings_ratio": 0.15020862989106243,
-          "per_call_input_cost_saved": 0.153535,
-          "monthly_input_cost_saved": 15353.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 4.66045799839776,
-        "candidate_generation_milliseconds": 101.19100000156322,
-        "token_count_milliseconds": 562.6060829963535,
-        "total_milliseconds": 701.1841670027934,
-        "tokens_saved_per_millisecond": 81.44365301929656,
+        "load_milliseconds": 4.222542003844865,
+        "candidate_generation_milliseconds": 67.6210829988122,
+        "token_count_milliseconds": 410.8535809937166,
+        "total_milliseconds": 482.71887499140576,
+        "tokens_saved_per_millisecond": 118.30281134338641,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 81443.65301929656,
-          "projected_input_latency_saved_milliseconds": 38071.333333333336,
-          "projected_net_latency_saved_milliseconds": 37370.14916633054,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 118302.8113433864,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -1047,16 +886,6 @@
           "savings_ratio": -0.0004485036288020876,
           "per_call_input_cost_saved": -0.00011,
           "monthly_input_cost_saved": -11.0
-        },
-        {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 49087,
-          "payload_tokens": 49060,
-          "instruction_tokens": 27,
-          "token_delta": -35,
-          "savings_ratio": -0.0007135285003669576,
-          "per_call_input_cost_saved": -0.000175,
-          "monthly_input_cost_saved": -17.5
         },
         {
           "candidate": "typed-tsv",
@@ -1109,16 +938,6 @@
           "monthly_input_cost_saved": -3605.5
         },
         {
-          "candidate": "codebook-row",
-          "total_tokens": 56279,
-          "payload_tokens": 56261,
-          "instruction_tokens": 18,
-          "token_delta": -7227,
-          "savings_ratio": -0.14733344206148577,
-          "per_call_input_cost_saved": -0.036135,
-          "monthly_input_cost_saved": -3613.5
-        },
-        {
           "candidate": "compact-json",
           "total_tokens": 58255,
           "payload_tokens": 58251,
@@ -1129,24 +948,12 @@
           "monthly_input_cost_saved": -4601.5
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-amazon-reviews.csv.txt",
-          "bytes": 198883,
-          "total_tokens": 50502,
-          "token_delta": -1450,
-          "savings_ratio": -0.029560466443773956,
-          "per_call_input_cost_saved": -0.00725,
-          "monthly_input_cost_saved": -725.0
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 1.4128330003586598,
-        "candidate_generation_milliseconds": 46.31099999824073,
-        "token_count_milliseconds": 163.56516700761858,
-        "total_milliseconds": 219.07891699811444,
+        "load_milliseconds": 1.3180840032873675,
+        "candidate_generation_milliseconds": 29.10616599547211,
+        "token_count_milliseconds": 116.89529097930063,
+        "total_milliseconds": 147.3368340084562,
         "tokens_saved_per_millisecond": 0.0,
         "break_even": {
           "max_provider_input_tokens_per_second_for_break_even": 0.0,
@@ -1181,16 +988,6 @@
           "savings_ratio": 0.3384113459879206,
           "per_call_input_cost_saved": 0.12551,
           "monthly_input_cost_saved": 12551.0
-        },
-        {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 49087,
-          "payload_tokens": 49060,
-          "instruction_tokens": 27,
-          "token_delta": 25089,
-          "savings_ratio": 0.33823608714408976,
-          "per_call_input_cost_saved": 0.125445,
-          "monthly_input_cost_saved": 12544.5
         },
         {
           "candidate": "typed-tsv",
@@ -1243,16 +1040,6 @@
           "monthly_input_cost_saved": 9956.5
         },
         {
-          "candidate": "codebook-row",
-          "total_tokens": 54279,
-          "payload_tokens": 54261,
-          "instruction_tokens": 18,
-          "token_delta": 19897,
-          "savings_ratio": 0.26824040120793785,
-          "per_call_input_cost_saved": 0.099485,
-          "monthly_input_cost_saved": 9948.5
-        },
-        {
           "candidate": "compact-json",
           "total_tokens": 58255,
           "payload_tokens": 58251,
@@ -1273,30 +1060,18 @@
           "monthly_input_cost_saved": 0.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-amazon-reviews.json.txt",
-          "bytes": 196883,
-          "total_tokens": 50074,
-          "token_delta": 24102,
-          "savings_ratio": 0.32492989646246767,
-          "per_call_input_cost_saved": 0.12051,
-          "monthly_input_cost_saved": 12051.0
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 0.7500420033466071,
-        "candidate_generation_milliseconds": 47.611999994842336,
-        "token_count_milliseconds": 163.2075000234181,
-        "total_milliseconds": 218.81829199992353,
-        "tokens_saved_per_millisecond": 114.71618652433669,
+        "load_milliseconds": 0.7692500075791031,
+        "candidate_generation_milliseconds": 30.47779100597836,
+        "token_count_milliseconds": 127.8070830157958,
+        "total_milliseconds": 159.07958400202915,
+        "tokens_saved_per_millisecond": 157.7952328545177,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 114716.18652433669,
-          "projected_input_latency_saved_milliseconds": 16734.666666666668,
-          "projected_net_latency_saved_milliseconds": 16515.848374666744,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 157795.2328545177,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -1325,16 +1100,6 @@
           "savings_ratio": 0.17171887658655144,
           "per_call_input_cost_saved": 0.05087,
           "monthly_input_cost_saved": 5087.0
-        },
-        {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 49087,
-          "payload_tokens": 49060,
-          "instruction_tokens": 27,
-          "token_delta": 10161,
-          "savings_ratio": 0.1714994598973805,
-          "per_call_input_cost_saved": 0.050805,
-          "monthly_input_cost_saved": 5080.5
         },
         {
           "candidate": "typed-tsv",
@@ -1387,16 +1152,6 @@
           "monthly_input_cost_saved": 2492.5
         },
         {
-          "candidate": "codebook-row",
-          "total_tokens": 54279,
-          "payload_tokens": 54261,
-          "instruction_tokens": 18,
-          "token_delta": 4969,
-          "savings_ratio": 0.08386780988387793,
-          "per_call_input_cost_saved": 0.024845,
-          "monthly_input_cost_saved": 2484.5
-        },
-        {
           "candidate": "compact-json",
           "total_tokens": 58255,
           "payload_tokens": 58251,
@@ -1417,30 +1172,18 @@
           "monthly_input_cost_saved": 0.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-amazon-reviews.jsonl.txt",
-          "bytes": 196883,
-          "total_tokens": 50074,
-          "token_delta": 9174,
-          "savings_ratio": 0.15484066972724816,
-          "per_call_input_cost_saved": 0.04587,
-          "monthly_input_cost_saved": 4587.0
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 1.1125829987577163,
-        "candidate_generation_milliseconds": 47.38637500122422,
-        "token_count_milliseconds": 160.22037599759642,
-        "total_milliseconds": 216.4262090009288,
-        "tokens_saved_per_millisecond": 47.00909398619249,
+        "load_milliseconds": 1.1033339978894219,
+        "candidate_generation_milliseconds": 30.3085000050487,
+        "token_count_milliseconds": 113.78054101078305,
+        "total_milliseconds": 145.20749999792315,
+        "tokens_saved_per_millisecond": 70.0652514515126,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 47009.093986192485,
-          "projected_input_latency_saved_milliseconds": 6782.666666666667,
-          "projected_net_latency_saved_milliseconds": 6566.240457665738,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 70065.2514515126,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -1469,16 +1212,6 @@
           "savings_ratio": 0.006860542772144982,
           "per_call_input_cost_saved": 0.001695,
           "monthly_input_cost_saved": 169.5
-        },
-        {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 49087,
-          "payload_tokens": 49060,
-          "instruction_tokens": 27,
-          "token_delta": 326,
-          "savings_ratio": 0.006597454111266266,
-          "per_call_input_cost_saved": 0.00163,
-          "monthly_input_cost_saved": 163.0
         },
         {
           "candidate": "raw",
@@ -1541,16 +1274,6 @@
           "monthly_input_cost_saved": -3425.0
         },
         {
-          "candidate": "codebook-row",
-          "total_tokens": 56279,
-          "payload_tokens": 56261,
-          "instruction_tokens": 18,
-          "token_delta": -6866,
-          "savings_ratio": -0.13895128812255883,
-          "per_call_input_cost_saved": -0.03433,
-          "monthly_input_cost_saved": -3433.0
-        },
-        {
           "candidate": "compact-json",
           "total_tokens": 58255,
           "payload_tokens": 58251,
@@ -1561,30 +1284,18 @@
           "monthly_input_cost_saved": -4421.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-amazon-reviews.tsv.txt",
-          "bytes": 198883,
-          "total_tokens": 50502,
-          "token_delta": -1089,
-          "savings_ratio": -0.022038734745917065,
-          "per_call_input_cost_saved": -0.005445,
-          "monthly_input_cost_saved": -544.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 1.443749999452848,
-        "candidate_generation_milliseconds": 48.43079200509237,
-        "token_count_milliseconds": 159.36941900872625,
-        "total_milliseconds": 216.9900000008056,
-        "tokens_saved_per_millisecond": 1.5622839762143022,
+        "load_milliseconds": 1.4440829982049763,
+        "candidate_generation_milliseconds": 30.868375004502013,
+        "token_count_milliseconds": 112.09329299163073,
+        "total_milliseconds": 144.41891699971166,
+        "tokens_saved_per_millisecond": 2.347337918346783,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 1562.2839762143021,
-          "projected_input_latency_saved_milliseconds": 226.0,
-          "projected_net_latency_saved_milliseconds": 9.009999999194406,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 2347.337918346783,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -1594,26 +1305,16 @@
       "bytes": 11565523,
       "raw_tokens": 3045398,
       "best": {
-        "candidate": "typed-codebook-row",
-        "total_tokens": 3043146,
-        "payload_tokens": 3043119,
-        "instruction_tokens": 27,
-        "token_delta": 2252,
-        "savings_ratio": 0.0007394764165471968,
-        "per_call_input_cost_saved": 0.01126,
-        "monthly_input_cost_saved": 1126.0
+        "candidate": "raw",
+        "total_tokens": 3045398,
+        "payload_tokens": 3045398,
+        "instruction_tokens": 0,
+        "token_delta": 0,
+        "savings_ratio": 0.0,
+        "per_call_input_cost_saved": 0.0,
+        "monthly_input_cost_saved": 0.0
       },
       "candidates": [
-        {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 3043146,
-          "payload_tokens": 3043119,
-          "instruction_tokens": 27,
-          "token_delta": 2252,
-          "savings_ratio": 0.0007394764165471968,
-          "per_call_input_cost_saved": 0.01126,
-          "monthly_input_cost_saved": 1126.0
-        },
         {
           "candidate": "raw",
           "total_tokens": 3045398,
@@ -1675,16 +1376,6 @@
           "monthly_input_cost_saved": -163298.5
         },
         {
-          "candidate": "codebook-row",
-          "total_tokens": 3412827,
-          "payload_tokens": 3412809,
-          "instruction_tokens": 18,
-          "token_delta": -367429,
-          "savings_ratio": -0.12065056849712254,
-          "per_call_input_cost_saved": -1.837145,
-          "monthly_input_cost_saved": -183714.5
-        },
-        {
           "candidate": "tsv",
           "total_tokens": 3417288,
           "payload_tokens": 3417283,
@@ -1705,30 +1396,18 @@
           "monthly_input_cost_saved": -185945.5
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-code-doc.csv.txt",
-          "bytes": 11913805,
-          "total_tokens": 3363514,
-          "token_delta": -318116,
-          "savings_ratio": -0.10445793948771227,
-          "per_call_input_cost_saved": -1.59058,
-          "monthly_input_cost_saved": -159058.0
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 86.36024999577785,
-        "candidate_generation_milliseconds": 1479.2789170023752,
-        "token_count_milliseconds": 10708.607208012836,
-        "total_milliseconds": 12817.42820799991,
-        "tokens_saved_per_millisecond": 0.17569827296512022,
+        "load_milliseconds": 78.43216700712219,
+        "candidate_generation_milliseconds": 1034.0164579974953,
+        "token_count_milliseconds": 8135.144126994419,
+        "total_milliseconds": 9247.628332988825,
+        "tokens_saved_per_millisecond": 0.0,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 175.69827296512022,
-          "projected_input_latency_saved_milliseconds": 1501.3333333333333,
-          "projected_net_latency_saved_milliseconds": -11316.094874666576,
-          "projected_break_even": false
+          "max_provider_input_tokens_per_second_for_break_even": 0.0,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -1738,26 +1417,16 @@
       "bytes": 11988648,
       "raw_tokens": 3387571,
       "best": {
-        "candidate": "typed-codebook-row",
-        "total_tokens": 3043146,
-        "payload_tokens": 3043119,
-        "instruction_tokens": 27,
-        "token_delta": 344425,
-        "savings_ratio": 0.10167314574366117,
-        "per_call_input_cost_saved": 1.722125,
-        "monthly_input_cost_saved": 172212.5
+        "candidate": "typed-csv",
+        "total_tokens": 3045421,
+        "payload_tokens": 3045404,
+        "instruction_tokens": 17,
+        "token_delta": 342150,
+        "savings_ratio": 0.10100157310356005,
+        "per_call_input_cost_saved": 1.71075,
+        "monthly_input_cost_saved": 171075.0
       },
       "candidates": [
-        {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 3043146,
-          "payload_tokens": 3043119,
-          "instruction_tokens": 27,
-          "token_delta": 344425,
-          "savings_ratio": 0.10167314574366117,
-          "per_call_input_cost_saved": 1.722125,
-          "monthly_input_cost_saved": 172212.5
-        },
         {
           "candidate": "typed-csv",
           "total_tokens": 3045421,
@@ -1819,16 +1488,6 @@
           "monthly_input_cost_saved": 0.0
         },
         {
-          "candidate": "codebook-row",
-          "total_tokens": 3412827,
-          "payload_tokens": 3412809,
-          "instruction_tokens": 18,
-          "token_delta": -25256,
-          "savings_ratio": -0.0074554894937995395,
-          "per_call_input_cost_saved": -0.12628,
-          "monthly_input_cost_saved": -12628.0
-        },
-        {
           "candidate": "tsv",
           "total_tokens": 3417288,
           "payload_tokens": 3417283,
@@ -1849,30 +1508,18 @@
           "monthly_input_cost_saved": -14859.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-code-doc.json.txt",
-          "bytes": 11913805,
-          "total_tokens": 3363514,
-          "token_delta": 24057,
-          "savings_ratio": 0.007101548572708882,
-          "per_call_input_cost_saved": 0.120285,
-          "monthly_input_cost_saved": 12028.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 45.26287499902537,
-        "candidate_generation_milliseconds": 1522.2499160008738,
-        "token_count_milliseconds": 10866.635540995048,
-        "total_milliseconds": 12989.199333002034,
-        "tokens_saved_per_millisecond": 26.51626102348814,
+        "load_milliseconds": 43.948958002147265,
+        "candidate_generation_milliseconds": 1034.909041991341,
+        "token_count_milliseconds": 8195.075706011266,
+        "total_milliseconds": 9273.96691699687,
+        "tokens_saved_per_millisecond": 36.89359721274446,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 26516.261023488143,
-          "projected_input_latency_saved_milliseconds": 229616.66666666666,
-          "projected_net_latency_saved_milliseconds": 216627.46733366462,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 36893.597212744455,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -1882,26 +1529,16 @@
       "bytes": 11958646,
       "raw_tokens": 3372988,
       "best": {
-        "candidate": "typed-codebook-row",
-        "total_tokens": 3043146,
-        "payload_tokens": 3043119,
-        "instruction_tokens": 27,
-        "token_delta": 329842,
-        "savings_ratio": 0.0977892598491308,
-        "per_call_input_cost_saved": 1.64921,
-        "monthly_input_cost_saved": 164921.0
+        "candidate": "typed-csv",
+        "total_tokens": 3045421,
+        "payload_tokens": 3045404,
+        "instruction_tokens": 17,
+        "token_delta": 327567,
+        "savings_ratio": 0.0971147836873419,
+        "per_call_input_cost_saved": 1.637835,
+        "monthly_input_cost_saved": 163783.5
       },
       "candidates": [
-        {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 3043146,
-          "payload_tokens": 3043119,
-          "instruction_tokens": 27,
-          "token_delta": 329842,
-          "savings_ratio": 0.0977892598491308,
-          "per_call_input_cost_saved": 1.64921,
-          "monthly_input_cost_saved": 164921.0
-        },
         {
           "candidate": "typed-csv",
           "total_tokens": 3045421,
@@ -1963,16 +1600,6 @@
           "monthly_input_cost_saved": 0.0
         },
         {
-          "candidate": "codebook-row",
-          "total_tokens": 3412827,
-          "payload_tokens": 3412809,
-          "instruction_tokens": 18,
-          "token_delta": -39839,
-          "savings_ratio": -0.011811189366816603,
-          "per_call_input_cost_saved": -0.199195,
-          "monthly_input_cost_saved": -19919.5
-        },
-        {
           "candidate": "tsv",
           "total_tokens": 3417288,
           "payload_tokens": 3417283,
@@ -1993,30 +1620,18 @@
           "monthly_input_cost_saved": -22150.5
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-code-doc.jsonl.txt",
-          "bytes": 11913805,
-          "total_tokens": 3363514,
-          "token_delta": 9474,
-          "savings_ratio": 0.0028087855634232914,
-          "per_call_input_cost_saved": 0.04737,
-          "monthly_input_cost_saved": 4737.0
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 49.08024999895133,
-        "candidate_generation_milliseconds": 1490.870832996734,
-        "token_count_milliseconds": 10863.304584003345,
-        "total_milliseconds": 12946.920083995792,
-        "tokens_saved_per_millisecond": 25.47648381700687,
+        "load_milliseconds": 47.293750001699664,
+        "candidate_generation_milliseconds": 1014.8418330063578,
+        "token_count_milliseconds": 8188.204417994712,
+        "total_milliseconds": 9250.374166993424,
+        "tokens_saved_per_millisecond": 35.41121624774952,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 25476.48381700687,
-          "projected_input_latency_saved_milliseconds": 219894.66666666666,
-          "projected_net_latency_saved_milliseconds": 206947.74658267086,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 35411.21624774952,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -2026,26 +1641,16 @@
       "bytes": 11565507,
       "raw_tokens": 3045767,
       "best": {
-        "candidate": "typed-codebook-row",
-        "total_tokens": 3043146,
-        "payload_tokens": 3043119,
-        "instruction_tokens": 27,
-        "token_delta": 2621,
-        "savings_ratio": 0.0008605385769824153,
-        "per_call_input_cost_saved": 0.013105,
-        "monthly_input_cost_saved": 1310.5
+        "candidate": "typed-csv",
+        "total_tokens": 3045421,
+        "payload_tokens": 3045404,
+        "instruction_tokens": 17,
+        "token_delta": 346,
+        "savings_ratio": 0.00011360028524834632,
+        "per_call_input_cost_saved": 0.00173,
+        "monthly_input_cost_saved": 173.0
       },
       "candidates": [
-        {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 3043146,
-          "payload_tokens": 3043119,
-          "instruction_tokens": 27,
-          "token_delta": 2621,
-          "savings_ratio": 0.0008605385769824153,
-          "per_call_input_cost_saved": 0.013105,
-          "monthly_input_cost_saved": 1310.5
-        },
         {
           "candidate": "typed-csv",
           "total_tokens": 3045421,
@@ -2107,16 +1712,6 @@
           "monthly_input_cost_saved": -163114.0
         },
         {
-          "candidate": "codebook-row",
-          "total_tokens": 3412827,
-          "payload_tokens": 3412809,
-          "instruction_tokens": 18,
-          "token_delta": -367060,
-          "savings_ratio": -0.12051479972039883,
-          "per_call_input_cost_saved": -1.8353,
-          "monthly_input_cost_saved": -183530.0
-        },
-        {
           "candidate": "tsv",
           "total_tokens": 3417288,
           "payload_tokens": 3417283,
@@ -2137,30 +1732,18 @@
           "monthly_input_cost_saved": -185761.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-code-doc.tsv.txt",
-          "bytes": 11913805,
-          "total_tokens": 3363514,
-          "token_delta": -317747,
-          "savings_ratio": -0.10432413247631878,
-          "per_call_input_cost_saved": -1.588735,
-          "monthly_input_cost_saved": -158873.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 82.87645899690688,
-        "candidate_generation_milliseconds": 1554.2337500010035,
-        "token_count_milliseconds": 10703.899503001594,
-        "total_milliseconds": 12890.30066599662,
-        "tokens_saved_per_millisecond": 0.20333117651118468,
+        "load_milliseconds": 76.48787499056198,
+        "candidate_generation_milliseconds": 1054.0074999880744,
+        "token_count_milliseconds": 8118.898583983537,
+        "total_milliseconds": 9249.431417003507,
+        "tokens_saved_per_millisecond": 0.037407704798366075,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 203.33117651118468,
-          "projected_input_latency_saved_milliseconds": 1747.3333333333333,
-          "projected_net_latency_saved_milliseconds": -11142.967332663286,
-          "projected_break_even": false
+          "max_provider_input_tokens_per_second_for_break_even": 37.407704798366076,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -2221,16 +1804,6 @@
           "monthly_input_cost_saved": -10.0
         },
         {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 37858,
-          "payload_tokens": 37831,
-          "instruction_tokens": 27,
-          "token_delta": -33,
-          "savings_ratio": -0.0008724388631857238,
-          "per_call_input_cost_saved": -0.000165,
-          "monthly_input_cost_saved": -16.5
-        },
-        {
           "candidate": "csv",
           "total_tokens": 39178,
           "payload_tokens": 39173,
@@ -2251,16 +1824,6 @@
           "monthly_input_cost_saved": -679.0
         },
         {
-          "candidate": "codebook-row",
-          "total_tokens": 39194,
-          "payload_tokens": 39176,
-          "instruction_tokens": 18,
-          "token_delta": -1369,
-          "savings_ratio": -0.036192994051553205,
-          "per_call_input_cost_saved": -0.006845,
-          "monthly_input_cost_saved": -684.5
-        },
-        {
           "candidate": "compact-json",
           "total_tokens": 40178,
           "payload_tokens": 40174,
@@ -2271,30 +1834,18 @@
           "monthly_input_cost_saved": -1176.5
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-loghub-2.csv.txt",
-          "bytes": 100893,
-          "total_tokens": 38932,
-          "token_delta": -1107,
-          "savings_ratio": -0.029266358228684734,
-          "per_call_input_cost_saved": -0.005535,
-          "monthly_input_cost_saved": -553.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 0.9292079994338565,
-        "candidate_generation_milliseconds": 17.044000000169035,
-        "token_count_milliseconds": 97.46179201465566,
-        "total_milliseconds": 121.30945800163317,
-        "tokens_saved_per_millisecond": 115.65462603757669,
+        "load_milliseconds": 0.8327499963343143,
+        "candidate_generation_milliseconds": 11.481334004201926,
+        "token_count_milliseconds": 71.87258303747512,
+        "total_milliseconds": 84.20199999818578,
+        "tokens_saved_per_millisecond": 166.6231205945499,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 115654.62603757669,
-          "projected_input_latency_saved_milliseconds": 9353.333333333334,
-          "projected_net_latency_saved_milliseconds": 9232.0238753317,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 166623.1205945499,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -2345,16 +1896,6 @@
           "monthly_input_cost_saved": 4031.0
         },
         {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 37858,
-          "payload_tokens": 37831,
-          "instruction_tokens": 27,
-          "token_delta": 8049,
-          "savings_ratio": 0.17533273792667786,
-          "per_call_input_cost_saved": 0.040245,
-          "monthly_input_cost_saved": 4024.5
-        },
-        {
           "candidate": "csv",
           "total_tokens": 39178,
           "payload_tokens": 39173,
@@ -2373,16 +1914,6 @@
           "savings_ratio": 0.14647003724922125,
           "per_call_input_cost_saved": 0.03362,
           "monthly_input_cost_saved": 3362.0
-        },
-        {
-          "candidate": "codebook-row",
-          "total_tokens": 39194,
-          "payload_tokens": 39176,
-          "instruction_tokens": 18,
-          "token_delta": 6713,
-          "savings_ratio": 0.14623042237567255,
-          "per_call_input_cost_saved": 0.033565,
-          "monthly_input_cost_saved": 3356.5
         },
         {
           "candidate": "compact-json",
@@ -2405,30 +1936,18 @@
           "monthly_input_cost_saved": 0.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-loghub-2.json.txt",
-          "bytes": 100893,
-          "total_tokens": 38932,
-          "token_delta": 6975,
-          "savings_ratio": 0.15193761300019604,
-          "per_call_input_cost_saved": 0.034875,
-          "monthly_input_cost_saved": 3487.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 0.21587499941233546,
-        "candidate_generation_milliseconds": 16.456290999485645,
-        "token_count_milliseconds": 101.44416599359829,
-        "total_milliseconds": 123.77437500254018,
-        "tokens_saved_per_millisecond": 178.64764010762488,
+        "load_milliseconds": 1.1382500088075176,
+        "candidate_generation_milliseconds": 10.517332993913442,
+        "token_count_milliseconds": 75.38404199294746,
+        "total_milliseconds": 87.05299999564886,
+        "tokens_saved_per_millisecond": 254.0061801558271,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 178647.64010762487,
-          "projected_input_latency_saved_milliseconds": 14741.333333333334,
-          "projected_net_latency_saved_milliseconds": 14617.558958330794,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 254006.18015582708,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -2479,16 +1998,6 @@
           "monthly_input_cost_saved": 1663.0
         },
         {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 37858,
-          "payload_tokens": 37831,
-          "instruction_tokens": 27,
-          "token_delta": 3313,
-          "savings_ratio": 0.08046926234485438,
-          "per_call_input_cost_saved": 0.016565,
-          "monthly_input_cost_saved": 1656.5
-        },
-        {
           "candidate": "csv",
           "total_tokens": 39178,
           "payload_tokens": 39173,
@@ -2507,16 +2016,6 @@
           "savings_ratio": 0.04828641519516164,
           "per_call_input_cost_saved": 0.00994,
           "monthly_input_cost_saved": 994.0
-        },
-        {
-          "candidate": "codebook-row",
-          "total_tokens": 39194,
-          "payload_tokens": 39176,
-          "instruction_tokens": 18,
-          "token_delta": 1977,
-          "savings_ratio": 0.04801923684146608,
-          "per_call_input_cost_saved": 0.009885,
-          "monthly_input_cost_saved": 988.5
         },
         {
           "candidate": "compact-json",
@@ -2539,30 +2038,18 @@
           "monthly_input_cost_saved": 0.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-loghub-2.jsonl.txt",
-          "bytes": 100893,
-          "total_tokens": 38932,
-          "token_delta": 2239,
-          "savings_ratio": 0.054382939447669476,
-          "per_call_input_cost_saved": 0.011195,
-          "monthly_input_cost_saved": 1119.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 0.6322499975794926,
-        "candidate_generation_milliseconds": 16.72083300218219,
-        "token_count_milliseconds": 98.08324900222942,
-        "total_milliseconds": 121.19637500290992,
-        "tokens_saved_per_millisecond": 143.37062473677784,
+        "load_milliseconds": 0.6907500064698979,
+        "candidate_generation_milliseconds": 11.049417007598095,
+        "token_count_milliseconds": 72.63008299923968,
+        "total_milliseconds": 84.38283299619798,
+        "tokens_saved_per_millisecond": 205.91866121374366,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 143370.62473677783,
-          "projected_input_latency_saved_milliseconds": 11584.0,
-          "projected_net_latency_saved_milliseconds": 11462.80362499709,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 205918.66121374365,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -2623,16 +2110,6 @@
           "monthly_input_cost_saved": -11.5
         },
         {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 37858,
-          "payload_tokens": 37831,
-          "instruction_tokens": 27,
-          "token_delta": -36,
-          "savings_ratio": -0.0009518269790069272,
-          "per_call_input_cost_saved": -0.00018,
-          "monthly_input_cost_saved": -18.0
-        },
-        {
           "candidate": "csv",
           "total_tokens": 39178,
           "payload_tokens": 39173,
@@ -2653,16 +2130,6 @@
           "monthly_input_cost_saved": -680.5
         },
         {
-          "candidate": "codebook-row",
-          "total_tokens": 39194,
-          "payload_tokens": 39176,
-          "instruction_tokens": 18,
-          "token_delta": -1372,
-          "savings_ratio": -0.036275183755486225,
-          "per_call_input_cost_saved": -0.00686,
-          "monthly_input_cost_saved": -686.0
-        },
-        {
           "candidate": "compact-json",
           "total_tokens": 40178,
           "payload_tokens": 40174,
@@ -2673,30 +2140,18 @@
           "monthly_input_cost_saved": -1178.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-loghub-2.tsv.txt",
-          "bytes": 100893,
-          "total_tokens": 38932,
-          "token_delta": -1110,
-          "savings_ratio": -0.029347998519380254,
-          "per_call_input_cost_saved": -0.00555,
-          "monthly_input_cost_saved": -555.0
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 0.8905419963411987,
-        "candidate_generation_milliseconds": 16.9048340030713,
-        "token_count_milliseconds": 96.08437598944874,
-        "total_milliseconds": 119.47774999862304,
-        "tokens_saved_per_millisecond": 117.40261262169449,
+        "load_milliseconds": 0.8401670056628063,
+        "candidate_generation_milliseconds": 11.417750007240102,
+        "token_count_milliseconds": 72.39220700284932,
+        "total_milliseconds": 84.66295899415854,
+        "tokens_saved_per_millisecond": 165.68048372804705,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 117402.61262169448,
-          "projected_input_latency_saved_milliseconds": 9351.333333333334,
-          "projected_net_latency_saved_milliseconds": 9231.85558333471,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 165680.48372804705,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -2737,16 +2192,6 @@
           "monthly_input_cost_saved": 11753.0
         },
         {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 507468,
-          "payload_tokens": 507441,
-          "instruction_tokens": 27,
-          "token_delta": 2606,
-          "savings_ratio": 0.005109062606602179,
-          "per_call_input_cost_saved": 0.01303,
-          "monthly_input_cost_saved": 1303.0
-        },
-        {
           "candidate": "raw",
           "total_tokens": 510074,
           "payload_tokens": 510074,
@@ -2775,16 +2220,6 @@
           "savings_ratio": -0.003805330206989574,
           "per_call_input_cost_saved": -0.009705,
           "monthly_input_cost_saved": -970.5
-        },
-        {
-          "candidate": "codebook-row",
-          "total_tokens": 531902,
-          "payload_tokens": 531884,
-          "instruction_tokens": 18,
-          "token_delta": -21828,
-          "savings_ratio": -0.04279379070487811,
-          "per_call_input_cost_saved": -0.10914,
-          "monthly_input_cost_saved": -10914.0
         },
         {
           "candidate": "compact-json",
@@ -2817,30 +2252,18 @@
           "monthly_input_cost_saved": -19080.5
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-openassistant.csv.txt",
-          "bytes": 1377289,
-          "total_tokens": 485805,
-          "token_delta": 24269,
-          "savings_ratio": 0.04757937083638845,
-          "per_call_input_cost_saved": 0.121345,
-          "monthly_input_cost_saved": 12134.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 10.815999994520098,
-        "candidate_generation_milliseconds": 270.96037499723025,
-        "token_count_milliseconds": 1596.2204160023248,
-        "total_milliseconds": 1953.5629579986562,
-        "tokens_saved_per_millisecond": 34.322927615648474,
+        "load_milliseconds": 10.354209007346071,
+        "candidate_generation_milliseconds": 181.00862500432413,
+        "token_count_milliseconds": 1191.4849579625297,
+        "total_milliseconds": 1382.8751249966444,
+        "tokens_saved_per_millisecond": 48.487386017709085,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 34322.92761564848,
-          "projected_input_latency_saved_milliseconds": 44701.333333333336,
-          "projected_net_latency_saved_milliseconds": 42747.77037533468,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 48487.38601770908,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -2891,16 +2314,6 @@
           "monthly_input_cost_saved": 87365.0
         },
         {
-          "candidate": "codebook-row",
-          "total_tokens": 526875,
-          "payload_tokens": 526857,
-          "instruction_tokens": 18,
-          "token_delta": 173662,
-          "savings_ratio": 0.24789839794329208,
-          "per_call_input_cost_saved": 0.86831,
-          "monthly_input_cost_saved": 86831.0
-        },
-        {
           "candidate": "tsv",
           "total_tokens": 531314,
           "payload_tokens": 531309,
@@ -2931,30 +2344,18 @@
           "monthly_input_cost_saved": 0.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-openassistant.json.txt",
-          "bytes": 2148006,
-          "total_tokens": 700550,
-          "token_delta": -13,
-          "savings_ratio": -1.8557192553712367e-05,
-          "per_call_input_cost_saved": -6.5e-05,
-          "monthly_input_cost_saved": -6.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 13.616749994980637,
-        "candidate_generation_milliseconds": 275.9870840018266,
-        "token_count_milliseconds": 1263.3286670024972,
-        "total_milliseconds": 1684.929374998319,
-        "tokens_saved_per_millisecond": 157.84222409931297,
+        "load_milliseconds": 12.626625000848435,
+        "candidate_generation_milliseconds": 195.25091600371525,
+        "token_count_milliseconds": 1042.1961660176748,
+        "total_milliseconds": 1250.095124996733,
+        "tokens_saved_per_millisecond": 212.74621001397398,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 157842.22409931297,
-          "projected_input_latency_saved_milliseconds": 177302.0,
-          "projected_net_latency_saved_milliseconds": 175617.07062500168,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 212746.210013974,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -3015,16 +2416,6 @@
           "monthly_input_cost_saved": 0.0
         },
         {
-          "candidate": "codebook-row",
-          "total_tokens": 526875,
-          "payload_tokens": 526857,
-          "instruction_tokens": 18,
-          "token_delta": -75,
-          "savings_ratio": -0.00014236902050113895,
-          "per_call_input_cost_saved": -0.000375,
-          "monthly_input_cost_saved": -37.5
-        },
-        {
           "candidate": "tsv",
           "total_tokens": 531314,
           "payload_tokens": 531309,
@@ -3045,30 +2436,18 @@
           "monthly_input_cost_saved": -2377.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-openassistant.jsonl.txt",
-          "bytes": 1540981,
-          "total_tokens": 526813,
-          "token_delta": -13,
-          "savings_ratio": -2.4677296886864086e-05,
-          "per_call_input_cost_saved": -6.5e-05,
-          "monthly_input_cost_saved": -6.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 10.661499996786006,
-        "candidate_generation_milliseconds": 275.994499999797,
-        "token_count_milliseconds": 1129.88779200532,
-        "total_milliseconds": 1500.6157499956316,
-        "tokens_saved_per_millisecond": 61.45210724348885,
+        "load_milliseconds": 10.571374994469807,
+        "candidate_generation_milliseconds": 195.42350000119768,
+        "token_count_milliseconds": 907.0336650038371,
+        "total_milliseconds": 1113.0523750034627,
+        "tokens_saved_per_millisecond": 82.84965026889513,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 61452.10724348885,
-          "projected_input_latency_saved_milliseconds": 61477.333333333336,
-          "projected_net_latency_saved_milliseconds": 59976.717583337704,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 82849.65026889513,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -3109,16 +2488,6 @@
           "monthly_input_cost_saved": 12705.0
         },
         {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 507468,
-          "payload_tokens": 507441,
-          "instruction_tokens": 27,
-          "token_delta": 4510,
-          "savings_ratio": 0.008808972260526819,
-          "per_call_input_cost_saved": 0.02255,
-          "monthly_input_cost_saved": 2255.0
-        },
-        {
           "candidate": "typed-csv",
           "total_tokens": 510111,
           "payload_tokens": 510094,
@@ -3147,16 +2516,6 @@
           "savings_ratio": -7.226873029700495e-05,
           "per_call_input_cost_saved": -0.000185,
           "monthly_input_cost_saved": -18.5
-        },
-        {
-          "candidate": "codebook-row",
-          "total_tokens": 531902,
-          "payload_tokens": 531884,
-          "instruction_tokens": 18,
-          "token_delta": -19924,
-          "savings_ratio": -0.03891573466047369,
-          "per_call_input_cost_saved": -0.09962,
-          "monthly_input_cost_saved": -9962.0
         },
         {
           "candidate": "compact-json",
@@ -3189,30 +2548,18 @@
           "monthly_input_cost_saved": -18128.5
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-openassistant.tsv.txt",
-          "bytes": 1377289,
-          "total_tokens": 485805,
-          "token_delta": 26173,
-          "savings_ratio": 0.05112133724495974,
-          "per_call_input_cost_saved": 0.130865,
-          "monthly_input_cost_saved": 13086.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 10.343834001105279,
-        "candidate_generation_milliseconds": 268.82554199983133,
-        "token_count_milliseconds": 1596.4400839948212,
-        "total_milliseconds": 1952.0964170005755,
-        "tokens_saved_per_millisecond": 35.32407487635877,
+        "load_milliseconds": 9.508499992080033,
+        "candidate_generation_milliseconds": 179.95962499117013,
+        "token_count_milliseconds": 1212.3103339836234,
+        "total_milliseconds": 1401.8073749903124,
+        "tokens_saved_per_millisecond": 49.190781294381864,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 35324.07487635877,
-          "projected_input_latency_saved_milliseconds": 45970.666666666664,
-          "projected_net_latency_saved_milliseconds": 44018.57024966609,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 49190.781294381864,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -3241,16 +2588,6 @@
           "savings_ratio": 0.7053737336786402,
           "per_call_input_cost_saved": 0.84842,
           "monthly_input_cost_saved": 84842.0
-        },
-        {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 238537,
-          "payload_tokens": 238510,
-          "instruction_tokens": 27,
-          "token_delta": 2022,
-          "savings_ratio": 0.00840542237039562,
-          "per_call_input_cost_saved": 0.01011,
-          "monthly_input_cost_saved": 1011.0
         },
         {
           "candidate": "raw",
@@ -3293,16 +2630,6 @@
           "monthly_input_cost_saved": -829.0
         },
         {
-          "candidate": "codebook-row",
-          "total_tokens": 246609,
-          "payload_tokens": 246591,
-          "instruction_tokens": 18,
-          "token_delta": -6050,
-          "savings_ratio": -0.025149755361470575,
-          "per_call_input_cost_saved": -0.03025,
-          "monthly_input_cost_saved": -3025.0
-        },
-        {
           "candidate": "compact-json",
           "total_tokens": 251204,
           "payload_tokens": 251200,
@@ -3333,30 +2660,18 @@
           "monthly_input_cost_saved": -5411.5
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-squad.csv.txt",
-          "bytes": 1043428,
-          "total_tokens": 241499,
-          "token_delta": -940,
-          "savings_ratio": -0.003907565295831791,
-          "per_call_input_cost_saved": -0.0047,
-          "monthly_input_cost_saved": -470.0
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 5.503291002241895,
-        "candidate_generation_milliseconds": 138.81441700505093,
-        "token_count_milliseconds": 654.107373993611,
-        "total_milliseconds": 832.3040000032051,
-        "tokens_saved_per_millisecond": 203.87262346371824,
+        "load_milliseconds": 5.131291996804066,
+        "candidate_generation_milliseconds": 91.8313330039382,
+        "token_count_milliseconds": 500.96500100335106,
+        "total_milliseconds": 597.9578330006916,
+        "tokens_saved_per_millisecond": 283.77251811969114,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 203872.62346371825,
-          "projected_input_latency_saved_milliseconds": 113122.66666666667,
-          "projected_net_latency_saved_milliseconds": 112290.36266666347,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 283772.5181196911,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -3395,16 +2710,6 @@
           "savings_ratio": 0.1472826419068776,
           "per_call_input_cost_saved": 0.204865,
           "monthly_input_cost_saved": 20486.5
-        },
-        {
-          "candidate": "codebook-row",
-          "total_tokens": 244596,
-          "payload_tokens": 244578,
-          "instruction_tokens": 18,
-          "token_delta": 33597,
-          "savings_ratio": 0.12076867498463296,
-          "per_call_input_cost_saved": 0.167985,
-          "monthly_input_cost_saved": 16798.5
         },
         {
           "candidate": "compact-json",
@@ -3447,30 +2752,18 @@
           "monthly_input_cost_saved": 0.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-squad.json.txt",
-          "bytes": 1174080,
-          "total_tokens": 278206,
-          "token_delta": -13,
-          "savings_ratio": -4.673014777510577e-05,
-          "per_call_input_cost_saved": -6.5e-05,
-          "monthly_input_cost_saved": -6.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 2.613333002955187,
-        "candidate_generation_milliseconds": 99.37791600532364,
-        "token_count_milliseconds": 484.5639990089694,
-        "total_milliseconds": 630.1159579961677,
-        "tokens_saved_per_millisecond": 335.4922174519594,
+        "load_milliseconds": 2.379333003773354,
+        "candidate_generation_milliseconds": 68.04770800226834,
+        "token_count_milliseconds": 386.3517099962337,
+        "total_milliseconds": 456.79841699893586,
+        "tokens_saved_per_millisecond": 462.784003037586,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 335492.2174519594,
-          "projected_input_latency_saved_milliseconds": 140932.66666666666,
-          "projected_net_latency_saved_milliseconds": 140302.5507086705,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 462784.003037586,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -3509,16 +2802,6 @@
           "savings_ratio": 0.04033722910623769,
           "per_call_input_cost_saved": 0.049855,
           "monthly_input_cost_saved": 4985.5
-        },
-        {
-          "candidate": "codebook-row",
-          "total_tokens": 244596,
-          "payload_tokens": 244578,
-          "instruction_tokens": 18,
-          "token_delta": 2595,
-          "savings_ratio": 0.01049795502263432,
-          "per_call_input_cost_saved": 0.012975,
-          "monthly_input_cost_saved": 1297.5
         },
         {
           "candidate": "compact-json",
@@ -3561,30 +2844,18 @@
           "monthly_input_cost_saved": -1089.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-squad.jsonl.txt",
-          "bytes": 1085078,
-          "total_tokens": 247204,
-          "token_delta": -13,
-          "savings_ratio": -5.2590911481405065e-05,
-          "per_call_input_cost_saved": -6.5e-05,
-          "monthly_input_cost_saved": -6.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 3.118291999271605,
-        "candidate_generation_milliseconds": 102.16470899467822,
-        "token_count_milliseconds": 471.9393319901428,
-        "total_milliseconds": 612.5300409985357,
-        "tokens_saved_per_millisecond": 294.5112695304217,
+        "load_milliseconds": 2.9036250052740797,
+        "candidate_generation_milliseconds": 69.23249999817926,
+        "token_count_milliseconds": 363.3312919846503,
+        "total_milliseconds": 435.4835840058513,
+        "tokens_saved_per_millisecond": 414.2452359296651,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 294511.2695304217,
-          "projected_input_latency_saved_milliseconds": 120264.66666666667,
-          "projected_net_latency_saved_milliseconds": 119652.13662566814,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 414245.2359296651,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -3613,16 +2884,6 @@
           "savings_ratio": 0.7062370993011863,
           "per_call_input_cost_saved": 0.851955,
           "monthly_input_cost_saved": 85195.5
-        },
-        {
-          "candidate": "typed-codebook-row",
-          "total_tokens": 238537,
-          "payload_tokens": 238510,
-          "instruction_tokens": 27,
-          "token_delta": 2729,
-          "savings_ratio": 0.011311166927789246,
-          "per_call_input_cost_saved": 0.013645,
-          "monthly_input_cost_saved": 1364.5
         },
         {
           "candidate": "typed-csv",
@@ -3665,16 +2926,6 @@
           "monthly_input_cost_saved": -475.5
         },
         {
-          "candidate": "codebook-row",
-          "total_tokens": 246609,
-          "payload_tokens": 246591,
-          "instruction_tokens": 18,
-          "token_delta": -5343,
-          "savings_ratio": -0.02214568152992962,
-          "per_call_input_cost_saved": -0.026715,
-          "monthly_input_cost_saved": -2671.5
-        },
-        {
           "candidate": "compact-json",
           "total_tokens": 251204,
           "payload_tokens": 251200,
@@ -3705,30 +2956,18 @@
           "monthly_input_cost_saved": -5058.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-squad.tsv.txt",
-          "bytes": 1043428,
-          "total_tokens": 241499,
-          "token_delta": -233,
-          "savings_ratio": -0.0009657390597929257,
-          "per_call_input_cost_saved": -0.001165,
-          "monthly_input_cost_saved": -116.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 5.5820409979787655,
-        "candidate_generation_milliseconds": 140.1290420035366,
-        "token_count_milliseconds": 668.9752110250993,
-        "total_milliseconds": 848.1814580009086,
-        "tokens_saved_per_millisecond": 200.88979591890285,
+        "load_milliseconds": 5.056833993876353,
+        "candidate_generation_milliseconds": 92.29291700467002,
+        "token_count_milliseconds": 492.0742900285404,
+        "total_milliseconds": 589.4422910059802,
+        "tokens_saved_per_millisecond": 289.0715556041962,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 200889.79591890285,
-          "projected_input_latency_saved_milliseconds": 113594.0,
-          "projected_net_latency_saved_milliseconds": 112745.81854199909,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 289071.5556041962,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -3829,30 +3068,18 @@
           "monthly_input_cost_saved": -12853.5
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-titanic-tabular.csv.txt",
-          "bytes": 57912,
-          "total_tokens": 25294,
-          "token_delta": -1803,
-          "savings_ratio": -0.07675279894427653,
-          "per_call_input_cost_saved": -0.009015,
-          "monthly_input_cost_saved": -901.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 0.8629579970147461,
-        "candidate_generation_milliseconds": 29.812750006385613,
-        "token_count_milliseconds": 68.4669990077964,
-        "total_milliseconds": 103.0900829937309,
-        "tokens_saved_per_millisecond": 22.068078072440265,
+        "load_milliseconds": 0.7667500030947849,
+        "candidate_generation_milliseconds": 28.301833997829817,
+        "token_count_milliseconds": 65.2659179904731,
+        "total_milliseconds": 94.3466669996269,
+        "tokens_saved_per_millisecond": 24.113199462668845,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 22068.078072440265,
-          "projected_input_latency_saved_milliseconds": 1516.6666666666667,
-          "projected_net_latency_saved_milliseconds": 1413.5765836729358,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 24113.199462668847,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -3953,30 +3180,18 @@
           "monthly_input_cost_saved": 0.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-titanic-tabular.json.txt",
-          "bytes": 45222,
-          "total_tokens": 23244,
-          "token_delta": 50785,
-          "savings_ratio": 0.6860149400910454,
-          "per_call_input_cost_saved": 0.253925,
-          "monthly_input_cost_saved": 25392.5
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 0.6927499998710118,
-        "candidate_generation_milliseconds": 37.343957999837585,
-        "token_count_milliseconds": 91.26066601311322,
-        "total_milliseconds": 132.85916700260714,
-        "tokens_saved_per_millisecond": 397.9326469731858,
+        "load_milliseconds": 1.7157499969471246,
+        "candidate_generation_milliseconds": 35.9302500000922,
+        "token_count_milliseconds": 85.40283401089255,
+        "total_milliseconds": 123.06125000759494,
+        "tokens_saved_per_millisecond": 429.61533380115264,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 397932.64697318577,
-          "projected_input_latency_saved_milliseconds": 35246.0,
-          "projected_net_latency_saved_milliseconds": 35113.14083299739,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 429615.33380115265,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -4077,30 +3292,18 @@
           "monthly_input_cost_saved": 0.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-titanic-tabular.jsonl.txt",
-          "bytes": 45222,
-          "total_tokens": 23244,
-          "token_delta": 26834,
-          "savings_ratio": 0.535844083230161,
-          "per_call_input_cost_saved": 0.13417,
-          "monthly_input_cost_saved": 13417.0
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 1.0743750026449561,
-        "candidate_generation_milliseconds": 38.085874999524094,
-        "token_count_milliseconds": 75.65558401256567,
-        "total_milliseconds": 118.3314580048318,
-        "tokens_saved_per_millisecond": 244.38133770665783,
+        "load_milliseconds": 1.0852499981410801,
+        "candidate_generation_milliseconds": 36.78666599444114,
+        "token_count_milliseconds": 71.4046259818133,
+        "total_milliseconds": 109.28741699899547,
+        "tokens_saved_per_millisecond": 264.60502767913164,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 244381.33770665783,
-          "projected_input_latency_saved_milliseconds": 19278.666666666668,
-          "projected_net_latency_saved_milliseconds": 19160.335208661836,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 264605.02767913166,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     },
@@ -4201,30 +3404,18 @@
           "monthly_input_cost_saved": -12854.0
         }
       ],
-      "external_baselines": [
-        {
-          "baseline": "toon",
-          "available": true,
-          "source_file": "/Users/saminkhan1/Documents/codex-context-compression/reports/generated-baselines/toon/hf-titanic-tabular.tsv.txt",
-          "bytes": 57912,
-          "total_tokens": 25294,
-          "token_delta": -1804,
-          "savings_ratio": -0.07679863771817795,
-          "per_call_input_cost_saved": -0.00902,
-          "monthly_input_cost_saved": -902.0
-        }
-      ],
+      "external_baselines": [],
       "latency": {
-        "load_milliseconds": 0.7914169982541353,
-        "candidate_generation_milliseconds": 29.79879199847346,
-        "token_count_milliseconds": 69.43170899467077,
-        "total_milliseconds": 103.77470900129993,
-        "tokens_saved_per_millisecond": 21.912853544802665,
+        "load_milliseconds": 0.7866670057410374,
+        "candidate_generation_milliseconds": 28.33308299886994,
+        "token_count_milliseconds": 65.94558300275821,
+        "total_milliseconds": 95.0767089962028,
+        "tokens_saved_per_millisecond": 23.91752958225363,
         "break_even": {
-          "max_provider_input_tokens_per_second_for_break_even": 21912.853544802663,
-          "projected_input_latency_saved_milliseconds": 1516.0,
-          "projected_net_latency_saved_milliseconds": 1412.2252909987,
-          "projected_break_even": true
+          "max_provider_input_tokens_per_second_for_break_even": 23917.529582253628,
+          "projected_input_latency_saved_milliseconds": null,
+          "projected_net_latency_saved_milliseconds": null,
+          "projected_break_even": null
         }
       }
     }

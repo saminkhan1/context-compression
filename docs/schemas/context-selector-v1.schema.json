@@ -33,13 +33,15 @@
     },
     "policy": {
       "type": "object",
-      "required": ["supported_extensions", "max_bytes", "min_savings_ratio", "min_saved_tokens", "include_candidates"],
+      "required": ["supported_extensions", "max_bytes", "candidate_tier", "min_savings_ratio", "min_saved_tokens", "include_candidates"],
       "properties": {
         "supported_extensions": {
           "type": "array",
           "items": { "type": "string" }
         },
         "max_bytes": { "type": "integer" },
+        "candidate_tier": { "enum": ["safe", "advanced"] },
+        "max_hook_latency_milliseconds": { "type": "integer" },
         "min_savings_ratio": { "type": "number" },
         "min_saved_tokens": { "type": "integer" },
         "include_candidates": { "type": "boolean" }

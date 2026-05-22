@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import importlib.util
 import io
 import json
 import os
@@ -29,7 +30,13 @@ from typing import Any, Iterable
 
 
 SUPPORTED_EXTENSIONS = {".json", ".jsonl", ".csv", ".tsv"}
-STANDARD_CANDIDATES = {"raw", "compact-json", "csv", "tsv"}
+SAFE_CANDIDATES = {"raw", "compact-json", "column-json", "csv", "tsv"}
+CANDIDATE_TIERS = {
+    "safe": SAFE_CANDIDATES,
+    "advanced": SAFE_CANDIDATES | {"codebook-json", "typed-csv", "typed-tsv"},
+}
+DEFAULT_CANDIDATE_TIER = "safe"
+STANDARD_CANDIDATES = SAFE_CANDIDATES
 SCHEMA_VERSION = "context-selector/v1"
 DEFAULT_MAX_BYTES = 5_000_000
 DEFAULT_INLINE_MAX_CHARS = 12_000
@@ -37,6 +44,7 @@ DEFAULT_MIN_SAVINGS_RATIO = 0.05
 DEFAULT_MIN_SAVED_TOKENS = 128
 DEFAULT_PROVIDER_INPUT_TOKENS_PER_SECOND = 0.0
 DEFAULT_MIN_NET_LATENCY_SAVED_MS = 0.0
+DEFAULT_MAX_HOOK_LATENCY_MS = 500
 RAW_INTENT_RE = re.compile(
     r"\b("
     r"exact bytes|verbatim|original formatting|whitespace|line numbers?|raw text|"
@@ -123,6 +131,7 @@ def handle_user_prompt_submit(payload: dict[str, Any]) -> int:
     max_bytes = int(os.environ.get("CONTEXT_OPTIMIZER_MAX_BYTES", DEFAULT_MAX_BYTES))
     inline_max_chars = int(os.environ.get("CONTEXT_OPTIMIZER_INLINE_MAX_CHARS", DEFAULT_INLINE_MAX_CHARS))
     policy = savings_policy_from_env()
+    candidate_tier = candidate_tier_from_env()
     report_skips = os.environ.get("CONTEXT_OPTIMIZER_REPORT_SKIPS") == "1"
 
     if prompt_requests_raw_file(prompt):
@@ -141,7 +150,7 @@ def handle_user_prompt_submit(payload: dict[str, Any]) -> int:
                 skipped.append(f"{path}: skipped; over {max_bytes} bytes")
                 continue
             source = load_source(path)
-            choice = choose_best(source, model_profile, cache_dir)
+            choice = choose_best(source, model_profile, cache_dir, candidate_tier)
             if should_inject(choice, policy):
                 choices.append(choice)
             elif report_skips:
@@ -297,7 +306,9 @@ def build_rewrite_plan(paths: list[Path], payload: dict[str, Any], cwd: Path) ->
 
     started_at = time.perf_counter()
     max_bytes = int(os.environ.get("CONTEXT_OPTIMIZER_MAX_BYTES", DEFAULT_MAX_BYTES))
+    max_hook_ms = int(os.environ.get("CONTEXT_OPTIMIZER_MAX_HOOK_LATENCY_MS", DEFAULT_MAX_HOOK_LATENCY_MS))
     policy = savings_policy_from_env()
+    candidate_tier = candidate_tier_from_env()
     model = str(payload.get("model") or payload.get("model_id") or "unknown")
     model_profile = resolve_model_profile(model, payload, cwd)
     cache_dir = cwd / ".codex" / "context-cache"
@@ -308,7 +319,9 @@ def build_rewrite_plan(paths: list[Path], payload: dict[str, Any], cwd: Path) ->
         if path.stat().st_size > max_bytes:
             return None
         source = load_source(path)
-        choice = choose_best(source, model_profile, cache_dir)
+        choice = choose_best(source, model_profile, cache_dir, candidate_tier)
+        if elapsed_milliseconds(started_at) > max_hook_ms:
+            return None
         if not should_inject(choice, policy):
             return None
         choices.append(choice)
@@ -355,6 +368,10 @@ def write_hook_report(
         "policy": {
             "supported_extensions": sorted(SUPPORTED_EXTENSIONS),
             "max_bytes": int(os.environ.get("CONTEXT_OPTIMIZER_MAX_BYTES", DEFAULT_MAX_BYTES)),
+            "max_hook_latency_milliseconds": int(
+                os.environ.get("CONTEXT_OPTIMIZER_MAX_HOOK_LATENCY_MS", DEFAULT_MAX_HOOK_LATENCY_MS)
+            ),
+            "candidate_tier": candidate_tier_from_env(),
             **savings_policy_from_env(),
             **latency_policy_from_env(),
             "include_candidates": False,
@@ -409,11 +426,8 @@ def choice_report(choice: Choice, model_profile: ModelProfile) -> dict[str, Any]
 
 
 def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
     with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+        return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
 def load_source(path: Path) -> SourceData:
@@ -436,9 +450,15 @@ def load_source(path: Path) -> SourceData:
     raise ValueError(f"unsupported extension {suffix}")
 
 
-def choose_best(source: SourceData, model_profile: ModelProfile, cache_dir: Path) -> Choice:
+def choose_best(
+    source: SourceData,
+    model_profile: ModelProfile,
+    cache_dir: Path,
+    candidate_tier: str | None = None,
+) -> Choice:
     raw_tokens = count_tokens(source.raw_text, model_profile)
-    candidates = candidates_for_profile(source, model_profile)
+    tier = normalize_candidate_tier(candidate_tier or DEFAULT_CANDIDATE_TIER)
+    candidates = candidates_for_profile(source, model_profile, tier)
 
     if not candidates:
         raise ValueError("no safe candidates generated")
@@ -457,9 +477,7 @@ def choose_best(source: SourceData, model_profile: ModelProfile, cache_dir: Path
     instruction_tokens = count_tokens(best.instructions, model_profile)
     total_tokens = count_tokens(candidate_blob(best), model_profile)
 
-    digest = hashlib.sha256((str(source.path) + "\0" + best.text).encode("utf-8")).hexdigest()[:16]
-    output_path = cache_dir / f"{source.path.stem}.{digest}.{best.name}.txt"
-    output_path.write_text(candidate_blob(best), encoding="utf-8")
+    output_path = write_candidate_sidecar(source, best, cache_dir, model_profile, tier)
 
     savings_ratio = 0.0 if raw_tokens == 0 else 1.0 - (total_tokens / raw_tokens)
     return Choice(
@@ -501,6 +519,17 @@ def latency_policy_from_env() -> dict[str, float | bool]:
     }
 
 
+def candidate_tier_from_env() -> str:
+    return normalize_candidate_tier(os.environ.get("CONTEXT_OPTIMIZER_CANDIDATE_TIER", DEFAULT_CANDIDATE_TIER))
+
+
+def normalize_candidate_tier(raw_tier: str) -> str:
+    tier = raw_tier.strip().lower()
+    if tier not in CANDIDATE_TIERS:
+        return DEFAULT_CANDIDATE_TIER
+    return tier
+
+
 def should_inject(choice: Choice, policy: dict[str, float | int]) -> bool:
     saved_tokens = choice.raw_tokens - choice.total_tokens
     return (
@@ -540,8 +569,13 @@ def with_fallback_note(candidates: list[Candidate]) -> list[Candidate]:
     ]
 
 
-def candidates_for_profile(source: SourceData, model_profile: ModelProfile) -> list[Candidate]:
-    candidates = validated_candidates(source)
+def candidates_for_profile(
+    source: SourceData,
+    model_profile: ModelProfile,
+    candidate_tier: str | None = None,
+) -> list[Candidate]:
+    tier = normalize_candidate_tier(candidate_tier or DEFAULT_CANDIDATE_TIER)
+    candidates = validated_candidates(source, CANDIDATE_TIERS[tier])
     if model_profile.token_counter != "deterministic-fallback":
         return candidates
     return with_fallback_note(
@@ -549,7 +583,40 @@ def candidates_for_profile(source: SourceData, model_profile: ModelProfile) -> l
     )
 
 
-def generate_candidates(source: SourceData) -> list[Candidate]:
+def sidecar_digest(source: SourceData, candidate: Candidate, model_profile: ModelProfile, candidate_tier: str) -> str:
+    stat = source.path.stat()
+    digest_input = {
+        "schema_version": SCHEMA_VERSION,
+        "source": str(source.path),
+        "source_size": stat.st_size,
+        "source_mtime_ns": stat.st_mtime_ns,
+        "source_sha256": sha256_file(source.path),
+        "model_slug": model_profile.slug,
+        "token_counter": model_profile.token_counter,
+        "tokenizer_family": model_profile.tokenizer_family,
+        "candidate_tier": candidate_tier,
+        "candidate_name": candidate.name,
+        "candidate_text_sha256": hashlib.sha256(candidate.text.encode("utf-8")).hexdigest(),
+    }
+    return hashlib.sha256(json.dumps(digest_input, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+
+
+def write_candidate_sidecar(
+    source: SourceData,
+    candidate: Candidate,
+    out_dir: Path,
+    model_profile: ModelProfile,
+    candidate_tier: str,
+) -> Path:
+    digest = sidecar_digest(source, candidate, model_profile, candidate_tier)
+    output_path = out_dir / f"{source.path.stem}.{digest}.{candidate.name}.txt"
+    if not output_path.exists():
+        output_path.write_text(candidate_blob(candidate), encoding="utf-8")
+    return output_path
+
+
+def generate_candidates(source: SourceData, allowed_names: set[str] | None = None) -> list[Candidate]:
+    allowed = allowed_names or set().union(*CANDIDATE_TIERS.values())
     value = source.value
     candidates = [
         Candidate(
@@ -572,65 +639,65 @@ def generate_candidates(source: SourceData) -> list[Candidate]:
     if rows:
         headers = stable_headers(rows)
         if headers and rows_are_uniform(rows, headers):
-            candidates.append(
-                Candidate(
-                    "column-json",
-                    column_json_text(rows, headers),
-                    True,
-                    "JSON [columns,rows].",
-                    ("lossless columnar JSON",),
-                )
-            )
-            codebook_json = codebook_json_text(rows, headers)
-            if codebook_json:
+            if "column-json" in allowed:
                 candidates.append(
                     Candidate(
-                        "codebook-json",
-                        codebook_json,
+                        "column-json",
+                        column_json_text(rows, headers),
                         True,
-                        "JSON [cols,dicts,rows]; dicts=[col,values]; codes=indexes.",
-                        ("lossless columnar JSON with categorical dictionaries",),
+                        "JSON [columns,rows].",
+                        ("lossless columnar JSON",),
                     )
                 )
-            typed_columns = infer_typed_columns(rows, headers)
+            if "codebook-json" in allowed:
+                codebook_json = codebook_json_text(rows, headers)
+                if codebook_json:
+                    candidates.append(
+                        Candidate(
+                            "codebook-json",
+                            codebook_json,
+                            True,
+                            "JSON [cols,dicts,rows]; dicts=[col,values]; codes=indexes.",
+                            ("lossless columnar JSON with categorical dictionaries",),
+                        )
+                    )
+            if {"typed-csv", "typed-tsv"} & allowed:
+                typed_columns = infer_typed_columns(rows, headers)
+            else:
+                typed_columns = None
             if typed_columns:
-                candidates.extend(
-                    [
+                if "typed-csv" in allowed:
+                    candidates.append(
                         Candidate(
                             "typed-csv",
                             typed_table_text(rows, headers, typed_columns, ","),
                             True,
                             "Types: i=int n=num b=bool s=str ?=nullable ~=null.",
                             ("lossless typed table",),
-                        ),
+                        )
+                    )
+                if "typed-tsv" in allowed:
+                    candidates.append(
                         Candidate(
                             "typed-tsv",
                             typed_table_text(rows, headers, typed_columns, "\t"),
                             True,
                             "Types: i=int n=num b=bool s=str ?=nullable ~=null.",
                             ("lossless typed table",),
-                        ),
-                    ]
-                )
-                if safe_unquoted_headers(headers):
-                    candidates.append(
-                        Candidate(
-                            "typed-codebook-row",
-                            typed_codebook_row_text(rows, headers, typed_columns),
-                            True,
-                            "Types: i=int n=num b=bool s=str ?=nullable ~=null. d:col code=value r=CSV rows.",
-                            ("lossless typed table with categorical dictionaries",),
                         )
                     )
-            candidates.extend(
-                [
+            if "csv" in allowed:
+                candidates.append(
                     Candidate(
                         "csv",
                         table_text(rows, headers, ","),
                         True,
                         "Cells=JSON CSV.",
                         ("lossless parsed table",),
-                    ),
+                    )
+                )
+            if "tsv" in allowed:
+                candidates.append(
                     Candidate(
                         "tsv",
                         table_text(rows, headers, "\t"),
@@ -638,26 +705,13 @@ def generate_candidates(source: SourceData) -> list[Candidate]:
                         "Cells=JSON TSV.",
                         ("lossless parsed table",),
                     ),
-                ]
-            )
-            if safe_unquoted_headers(headers):
-                candidates.extend(
-                    [
-                        Candidate(
-                            "codebook-row",
-                            codebook_row_text(rows, headers),
-                            True,
-                            "c=cols d:col code=JSON r=CSV rows; \\ escapes |.",
-                            ("lossless codebook row table",),
-                        ),
-                    ]
                 )
     return dedupe_candidates(candidates)
 
 
-def validated_candidates(source: SourceData) -> list[Candidate]:
+def validated_candidates(source: SourceData, allowed_names: set[str] | None = None) -> list[Candidate]:
     verified: list[Candidate] = []
-    for candidate in generate_candidates(source):
+    for candidate in generate_candidates(source, allowed_names):
         if not candidate.reversible:
             continue
         if candidate_matches_source(source, candidate):
@@ -698,20 +752,12 @@ def rows_from_value(value: Any) -> list[dict[str, Any]]:
 
 
 def stable_headers(rows: list[dict[str, Any]]) -> list[str]:
-    seen: dict[str, None] = {}
-    for row in rows:
-        for key in row:
-            seen.setdefault(str(key), None)
-    return list(seen.keys())
+    return list(dict.fromkeys(str(key) for row in rows for key in row))
 
 
 def rows_are_uniform(rows: list[dict[str, Any]], headers: list[str]) -> bool:
     expected = set(headers)
     return all(set(str(key) for key in row) == expected for row in rows)
-
-
-def safe_unquoted_headers(headers: list[str]) -> bool:
-    return all(re.match(r"^[A-Za-z_][A-Za-z0-9_. -]*$", header) for header in headers)
 
 
 def compact_json(value: Any) -> str:
@@ -845,130 +891,8 @@ def typed_cell(value: Any, kind: str) -> str:
     return str(value)
 
 
-def codebook_row_text(rows: list[dict[str, Any]], headers: list[str]) -> str:
-    dictionaries = build_dictionaries(rows, headers)
-    encoded_rows = encode_rows(rows, headers, dictionaries)
-
-    output = io.StringIO()
-    output.write("c:" + ",".join(headers) + "\n")
-    for header, mapping in dictionaries.items():
-        pairs = [f"{code}={escape_atom(value)}" for value, code in mapping.items()]
-        output.write(f"d:{header} " + "|".join(pairs) + "\n")
-    output.write("r:\n")
-    writer = csv.writer(output, lineterminator="\n")
-    writer.writerows(encoded_rows)
-    return output.getvalue().rstrip("\n")
-
-
-def typed_codebook_row_text(
-    rows: list[dict[str, Any]],
-    headers: list[str],
-    typed_columns: dict[str, str],
-) -> str:
-    typed_rows = [[typed_cell(row.get(header), typed_columns[header]) for header in headers] for row in rows]
-    dictionaries = build_cell_dictionaries(typed_rows, headers)
-
-    output = io.StringIO()
-    output.write("t:" + ",".join(typed_columns[header] for header in headers) + "\n")
-    output.write("c:" + ",".join(headers) + "\n")
-    for header, mapping in dictionaries.items():
-        pairs = [f"{code}={escape_atom(value)}" for value, code in mapping.items()]
-        output.write(f"d:{header} " + "|".join(pairs) + "\n")
-    output.write("r:\n")
-    writer = csv.writer(output, lineterminator="\n")
-    for typed_row in typed_rows:
-        writer.writerow([encode_cell(value, header, dictionaries) for value, header in zip(typed_row, headers)])
-    return output.getvalue().rstrip("\n")
-
-
-def build_dictionaries(rows: list[dict[str, Any]], headers: list[str]) -> dict[str, dict[str, int]]:
-    cell_rows = [[cell_json(row.get(header)) for header in headers] for row in rows]
-    return build_cell_dictionaries(cell_rows, headers)
-
-
-def build_cell_dictionaries(rows: list[list[str]], headers: list[str]) -> dict[str, dict[str, int]]:
-    dictionaries: dict[str, dict[str, int]] = {}
-    row_count = max(1, len(rows))
-
-    for index, header in enumerate(headers):
-        values = [row[index] for row in rows]
-        unique = list(dict.fromkeys(values))
-        if not unique:
-            continue
-
-        avg_len = sum(len(value) for value in values) / row_count
-        repeated = len(unique) <= min(64, max(2, row_count // 2))
-        worthwhile = avg_len >= 4 and sum(len(value) for value in values) > sum(len(value) for value in unique) + row_count
-        if repeated and worthwhile:
-            dictionaries[header] = {value: index for index, value in enumerate(unique)}
-
-    return dictionaries
-
-
-def encode_cell(value: str, header: str, dictionaries: dict[str, dict[str, int]]) -> str:
-    mapping = dictionaries.get(header)
-    return str(mapping[value]) if mapping else value
-
-
-def encode_rows(
-    rows: list[dict[str, Any]],
-    headers: list[str],
-    dictionaries: dict[str, dict[str, int]],
-) -> list[list[str]]:
-    encoded: list[list[str]] = []
-    for row in rows:
-        encoded_row: list[str] = []
-        for header in headers:
-            value = cell_json(row.get(header))
-            mapping = dictionaries.get(header)
-            encoded_row.append(str(mapping[value]) if mapping else value)
-        encoded.append(encoded_row)
-    return encoded
-
-
 def cell_json(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=False)
-
-
-def escape_atom(value: str) -> str:
-    return value.replace("\\", "\\\\").replace("\n", "\\n").replace("|", "\\|").replace(",", "\\,")
-
-
-def unescape_atom(value: str) -> str:
-    output: list[str] = []
-    escaped = False
-    for char in value:
-        if escaped:
-            output.append("\n" if char == "n" else char)
-            escaped = False
-        elif char == "\\":
-            escaped = True
-        else:
-            output.append(char)
-    if escaped:
-        output.append("\\")
-    return "".join(output)
-
-
-def split_escaped(value: str, delimiter: str) -> list[str]:
-    parts: list[str] = []
-    current: list[str] = []
-    escaped = False
-    for char in value:
-        if escaped:
-            current.extend(["\\", char])
-            escaped = False
-        elif char == "\\":
-            escaped = True
-        elif char == delimiter:
-            parts.append("".join(current))
-            current = []
-        else:
-            current.append(char)
-    if escaped:
-        current.append("\\")
-    parts.append("".join(current))
-    return parts
 
 
 def decode_candidate_value(name: str, text: str, source_kind: str) -> Any:
@@ -988,10 +912,6 @@ def decode_candidate_value(name: str, text: str, source_kind: str) -> Any:
         return decode_typed_table(text, ",")
     if name == "typed-tsv":
         return decode_typed_table(text, "\t")
-    if name == "codebook-row":
-        return decode_codebook_row(text)
-    if name == "typed-codebook-row":
-        return decode_typed_codebook_row(text)
     raise ValueError(f"unsupported candidate {name}")
 
 
@@ -1117,62 +1037,6 @@ def decode_typed_cell(value: str, kind: str) -> Any:
     raise ValueError(f"unsupported typed cell kind {kind}")
 
 
-def decode_codebook_row(text: str) -> list[dict[str, Any]]:
-    headers, dictionaries, rows_text = parse_codebook_sections(text)
-    reader = csv.reader(io.StringIO(rows_text))
-    rows: list[dict[str, Any]] = []
-    for csv_row in reader:
-        decoded: dict[str, Any] = {}
-        for header, cell in zip(headers, csv_row):
-            raw = dictionaries.get(header, {}).get(cell, cell)
-            decoded[header] = json.loads(raw)
-        rows.append(decoded)
-    return rows
-
-
-def decode_typed_codebook_row(text: str) -> list[dict[str, Any]]:
-    first_line, _, rest = text.partition("\n")
-    if not first_line.startswith("t:") or not rest:
-        raise ValueError("missing typed codebook type header")
-    types = first_line[2:].split(",")
-    headers, dictionaries, rows_text = parse_codebook_sections(rest)
-    if len(headers) != len(types):
-        raise ValueError("header/type length mismatch")
-    reader = csv.reader(io.StringIO(rows_text))
-    rows: list[dict[str, Any]] = []
-    for csv_row in reader:
-        decoded: dict[str, Any] = {}
-        for header, kind, cell in zip(headers, types, csv_row):
-            raw = dictionaries.get(header, {}).get(cell, cell)
-            decoded[header] = decode_typed_cell(raw, kind)
-        rows.append(decoded)
-    return rows
-
-
-def parse_codebook_sections(text: str) -> tuple[list[str], dict[str, dict[str, str]], str]:
-    head, marker, rows_text = text.partition("\nr:\n")
-    if not marker:
-        raise ValueError("missing row section")
-    lines = head.splitlines()
-    if not lines or not lines[0].startswith("c:"):
-        raise ValueError("missing codebook columns")
-    headers = lines[0][2:].split(",")
-    dictionaries: dict[str, dict[str, str]] = {}
-    for line in lines[1:]:
-        if not line.startswith("d:"):
-            raise ValueError("invalid dictionary line")
-        header, _, encoded_pairs = line[2:].partition(" ")
-        mapping: dict[str, str] = {}
-        if encoded_pairs:
-            for pair in split_escaped(encoded_pairs, "|"):
-                code, _, raw = pair.partition("=")
-                if not _:
-                    raise ValueError("invalid dictionary pair")
-                mapping[code] = unescape_atom(raw)
-        dictionaries[header] = mapping
-    return headers, dictionaries, rows_text
-
-
 def dedupe_candidates(candidates: Iterable[Candidate]) -> list[Candidate]:
     seen: set[str] = set()
     unique: list[Candidate] = []
@@ -1295,11 +1159,7 @@ def tokenizer_json_path() -> Path | None:
 
 
 def module_available(name: str) -> bool:
-    try:
-        __import__(name)
-        return True
-    except Exception:
-        return False
+    return importlib.util.find_spec(name) is not None
 
 
 def as_int(value: Any) -> int | None:

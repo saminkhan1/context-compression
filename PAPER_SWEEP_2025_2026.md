@@ -32,7 +32,7 @@ transparent Codex hook whose default contract is no material output change.
     dictionary, explicitly optimizing for token savings after dictionary
     overhead. The paper reports high decompression fidelity on repetitive log
     data, but uses decompression as a proxy for downstream analytical parity.
-  - Product implication: this is the closest match to the repo's codebook-row
+  - Product implication: this is the closest match to the repo's codebook JSON
     direction. Keep dictionary/codebook candidates, but gate them by exact
     reconstruction and task-answer parity. Add log-like/repetitive datasets to
     the benchmark, because this paper's upside depends heavily on repetition.

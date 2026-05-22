@@ -197,9 +197,9 @@ class HarnessSmokeTests(unittest.TestCase):
 
         result = json.loads(response)
         self.assertIn(".codex/context-cache/sample-repetitive.", result["path"])
-        self.assertTrue(result["path"].endswith(".tsv.txt"))
+        self.assertTrue(result["path"].endswith(".column-json.txt"))
         sidecar_text = Path(result["path"]).read_text(encoding="utf-8")
-        self.assertIn("Cells=JSON TSV.", sidecar_text)
+        self.assertIn("JSON [columns,rows].", sidecar_text)
 
 
 def run_node_harness_smoke(adapter: str, harness_logic: str) -> dict[str, object]:

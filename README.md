@@ -24,10 +24,12 @@ about the original file, and the model only receives the replacement content.
 The same selector is also available through `selector.py`, which emits a stable
 JSON decision report for other AI agents and evidence harnesses.
 
-Supported inputs: JSON, JSONL, CSV, and TSV. Candidate representations cover
-lossless JSON compression, tokenizer-aware JSONL compression, compact CSV/TSV
-forms, columnar/codebook JSON, typed CSV/TSV, and codebook rows. Token counters
-include `tiktoken` and Hugging Face tokenizer JSON files.
+Supported inputs: JSON, JSONL, CSV, and TSV. The default runtime candidate tier
+uses familiar lossless forms only: raw, compact JSON, columnar JSON, and
+CSV/TSV with JSON cells. Advanced candidates such as codebook JSON and typed
+CSV/TSV are available for offline evaluation, but they are not selected by the
+hook unless explicitly enabled. Token counters include `tiktoken` and Hugging
+Face tokenizer JSON files.
 
 ## Benchmark Snapshot
 
@@ -126,6 +128,16 @@ The default absolute floor is `128` saved tokens. This keeps tiny token wins out
 of the invisible runtime rewrite path, where local preprocessing overhead can
 cost more than the provider-side token savings.
 
+The default candidate tier is `safe`. To evaluate the larger candidate set
+offline, run `selector.py --candidate-tier advanced ...` or set:
+
+```sh
+CONTEXT_OPTIMIZER_CANDIDATE_TIER=advanced
+```
+
+Keep `advanced` out of invisible runtime hooks until paired quality evals prove
+answer parity for the target model family.
+
 Latency economics are opt-in for the runtime hook. If you know the downstream
 model's approximate input-processing speed, set:
 
@@ -139,6 +151,15 @@ Use `CONTEXT_OPTIMIZER_MIN_NET_LATENCY_SAVED_MS` to require an additional net
 latency margin. If no provider throughput is configured, adapters keep the
 default token-savings policy only.
 
+`PreToolUse` also has a hard local processing ceiling:
+
+```sh
+CONTEXT_OPTIMIZER_MAX_HOOK_LATENCY_MS=500
+```
+
+If selection exceeds that ceiling, the hook no-ops and leaves the original
+command untouched.
+
 ## Candidate Formats
 
 The selector compares these candidates:
@@ -146,18 +167,17 @@ The selector compares these candidates:
 - raw/no conversion
 - compact JSON
 - columnar JSON as `[columns, rows]`
-- codebook JSON as `[columns, dictionaries, rows]`
 - CSV and TSV with JSON cells
-- typed CSV/TSV
-- codebook row table
-- typed codebook row table
+- codebook JSON as `[columns, dictionaries, rows]` (`advanced`)
+- typed CSV/TSV (`advanced`)
 
 The columnar and codebook JSON candidates use only standard JSON while removing
 repeated object keys and repeated categorical values from uniform row data. The
-typed codebook row candidate still wins on some repetitive flat records. On the
-included `sample-repetitive.json`, the selected candidate is
-`typed-codebook-row`: `1067` tokenizer tokens versus raw `4102` on `gpt-5.5`
-with `o200k_base`, a `74.0%` reduction.
+default hook tier uses columnar JSON for repetitive flat records until
+model-quality evidence justifies dictionary or typed candidates in production.
+On the included `sample-repetitive.json`, the default safe tier still produces a
+large verified reduction; use the selector CLI with `--include-candidates` to
+inspect exact local token counts for your tokenizer.
 
 Every generated candidate is decoded and compared with the parsed source value
 before it can win. Non-uniform object arrays do not use tabular candidates unless
@@ -266,8 +286,8 @@ those registrations and this repo checkout.
 The regression suite includes a real Hugging Face tabular fixture derived from
 [`julien-c/titanic-survival`](https://hf.co/datasets/julien-c/titanic-survival).
 The checked-in JSON fixture has 887 records and verifies a concrete optimizer
-result: `codebook-json`, `20791` tokenizer tokens versus raw `71983` on
-`gpt-5.5`, a `71.1%` reduction.
+result in the default safe tier: `column-json`, `21460` tokenizer tokens versus
+raw `71983` on `gpt-5.5`, a `70.2%` reduction.
 
 Manual smoke test:
 
@@ -327,6 +347,22 @@ This checks the unit suite, selector report verification, an actual Codex
 benchmark smoke with a generated external baseline. It is intentionally lean:
 it proves the evidence pipeline is wired correctly without rerunning the full
 downloaded-corpus benchmark.
+
+Set up the no-API quality-eval skeleton without calling a paid model:
+
+```sh
+.venv/bin/python evals/build_context_quality_dataset.py \
+  --corpus data/benchmark-corpus \
+  --out evals/context-quality.generated.jsonl \
+  --model gpt-5.5
+
+.venv/bin/python evals/verify_context_quality_dataset.py \
+  evals/context-quality.generated.jsonl
+```
+
+This verifies local raw/optimized pair integrity only. Do not promote those
+results to answer-parity evidence until an Inspect run has been executed
+against real models and summarized.
 
 Verify the install path from an isolated temporary checkout:
 
@@ -402,6 +438,7 @@ local, git-ignored benchmark corpus:
   --rows 1000 \
   --out data/benchmark-corpus \
   --corpus data/benchmark-corpus \
+  --candidate-tier advanced \
   --input-price-per-1m 5 \
   --monthly-calls 100000 \
   --provider-input-tokens-per-second 1500 \
@@ -485,8 +522,8 @@ context-efficiency methods, include ILRe-style baselines as well.
 
 Latest local run numbers live in [`EVIDENCE.md`](EVIDENCE.md) and
 [`reports/benchmark-report.md`](reports/benchmark-report.md). Rerun the command
-above after changing the corpus, tokenizer, candidate set, or price scenario
-before using token or dollar claims externally.
+above after changing the corpus, tokenizer, candidate set, candidate tier, or
+price scenario before using token or dollar claims externally.
 
 See [EVIDENCE.md](EVIDENCE.md) for the corpus, commands, and limits of the
 claim.

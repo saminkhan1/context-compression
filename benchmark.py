@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import csv
 import datetime as dt
-import hashlib
 import json
 import re
 import shlex
@@ -228,6 +227,12 @@ def add_run_args(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--json-out", type=Path, default=DEFAULT_REPORT_JSON)
     parser.add_argument("--markdown-out", type=Path, default=DEFAULT_REPORT_MD)
+    parser.add_argument(
+        "--candidate-tier",
+        choices=sorted(hook.CANDIDATE_TIERS),
+        default="advanced",
+        help="Candidate tier to benchmark. Defaults to advanced to preserve the checked-in evidence surface.",
+    )
 
 
 def parse_formats(raw: str) -> tuple[str, ...]:
@@ -486,20 +491,12 @@ def write_source_files(out_dir: Path, slug: str, rows: list[dict[str, Any]], for
 
 
 def write_delimited(path: Path, rows: list[dict[str, Any]], delimiter: str) -> None:
-    headers = stable_headers(rows)
+    headers = hook.stable_headers(rows)
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=headers, delimiter=delimiter, lineterminator="\n")
         writer.writeheader()
         for row in rows:
             writer.writerow({header: delimited_cell(row.get(header)) for header in headers})
-
-
-def stable_headers(rows: list[dict[str, Any]]) -> list[str]:
-    headers: dict[str, None] = {}
-    for row in rows:
-        for key in row:
-            headers.setdefault(str(key), None)
-    return list(headers)
 
 
 def delimited_cell(value: Any) -> str:
@@ -601,6 +598,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
         raise SystemExit(f"No supported corpus files found in {corpus}")
 
     profile = hook.resolve_model_profile(args.model, {"model": args.model}, Path.cwd())
+    candidate_tier = getattr(args, "candidate_tier", "advanced")
     baseline_commands = resolve_baseline_command_specs(args.baseline_command)
     generated_baselines = run_baseline_commands(
         baseline_commands,
@@ -616,6 +614,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
             args.monthly_calls,
             baselines,
             args.provider_input_tokens_per_second,
+            candidate_tier,
         )
         for path in files
     ]
@@ -638,6 +637,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
         },
         "baseline_dirs": {baseline.name: str(baseline.path) for baseline in baselines},
         "baseline_provenance": baseline_provenance(baselines),
+        "candidate_tier": candidate_tier,
         "totals": totals,
         "results": results,
     }
@@ -657,6 +657,7 @@ def benchmark_file(
     monthly_calls: int,
     baselines: list[BaselineSpec],
     provider_input_tokens_per_second: float,
+    candidate_tier: str,
 ) -> dict[str, Any]:
     total_start = time.perf_counter()
     load_start = time.perf_counter()
@@ -669,7 +670,7 @@ def benchmark_file(
     token_count_milliseconds += elapsed_milliseconds(token_start)
 
     candidate_start = time.perf_counter()
-    candidates = hook.candidates_for_profile(source, profile)
+    candidates = hook.candidates_for_profile(source, profile, candidate_tier)
     candidate_generation_milliseconds = elapsed_milliseconds(candidate_start)
 
     rows = []
@@ -949,9 +950,9 @@ def run_baseline_commands(
             entries.append(
                 {
                     "source": str(source),
-                    "source_sha256": sha256_file(source),
+                    "source_sha256": hook.sha256_file(source),
                     "output": str(output),
-                    "output_sha256": sha256_file(output),
+                    "output_sha256": hook.sha256_file(output),
                     "command": rendered_command,
                     "bytes": output.stat().st_size,
                 }
@@ -1135,21 +1136,13 @@ def corpus_fingerprint(corpus: Path, files: list[Path]) -> dict[str, Any]:
             {
                 "file": path.name,
                 "bytes": path.stat().st_size,
-                "sha256": sha256_file(path),
+                "sha256": hook.sha256_file(path),
             }
         )
     return {
-        "manifest_sha256": sha256_file(manifest) if manifest.exists() else None,
+        "manifest_sha256": hook.sha256_file(manifest) if manifest.exists() else None,
         "files": entries,
     }
-
-
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def markdown_report(report: dict[str, Any]) -> str:

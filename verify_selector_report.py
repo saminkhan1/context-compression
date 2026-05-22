@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import sys
@@ -84,7 +83,14 @@ def validate_policy(policy: Any) -> list[str]:
         return ["report.policy must be an object"]
     require_keys(
         policy,
-        ["supported_extensions", "max_bytes", "min_savings_ratio", "min_saved_tokens", "include_candidates"],
+        [
+            "supported_extensions",
+            "max_bytes",
+            "candidate_tier",
+            "min_savings_ratio",
+            "min_saved_tokens",
+            "include_candidates",
+        ],
         "policy",
         errors,
     )
@@ -93,6 +99,8 @@ def validate_policy(policy: Any) -> list[str]:
         errors.append("policy.supported_extensions must be a list of strings")
     if not isinstance(policy.get("max_bytes"), int) or policy.get("max_bytes") < 0:
         errors.append("policy.max_bytes must be a non-negative integer")
+    if policy.get("candidate_tier") not in hook.CANDIDATE_TIERS:
+        errors.append("policy.candidate_tier is invalid")
     if not isinstance(policy.get("min_savings_ratio"), (int, float)) or policy.get("min_savings_ratio") < 0:
         errors.append("policy.min_savings_ratio must be a non-negative number")
     if not isinstance(policy.get("min_saved_tokens"), int) or policy.get("min_saved_tokens") < 0:
@@ -226,13 +234,13 @@ def validate_files(result: dict[str, Any], prefix: str) -> list[str]:
     if not read_path.is_file():
         errors.append(f"{prefix}.read_path does not exist")
     expected_sha = result.get("sha256")
-    if expected_sha and source.is_file() and sha256_file(source) != expected_sha:
+    if expected_sha and source.is_file() and hook.sha256_file(source) != expected_sha:
         errors.append(f"{prefix}.sha256 does not match source")
     if result.get("selected") is True and source.is_file() and read_path.is_file():
         expected_output_sha = result.get("output_sha256")
         if not isinstance(expected_output_sha, str) or not expected_output_sha:
             errors.append(f"{prefix}.output_sha256 must be a non-empty string when selected")
-        elif sha256_file(read_path) != expected_output_sha:
+        elif hook.sha256_file(read_path) != expected_output_sha:
             errors.append(f"{prefix}.output_sha256 does not match read_path")
         errors.extend(validate_round_trip(result, source, read_path, prefix))
     return errors
@@ -270,14 +278,6 @@ def require_keys(value: dict[str, Any], keys: list[str], prefix: str, errors: li
     for key in keys:
         if key not in value:
             errors.append(f"{prefix}.{key} is required")
-
-
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 if __name__ == "__main__":

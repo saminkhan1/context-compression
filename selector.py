@@ -9,7 +9,6 @@ adapters.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from dataclasses import asdict
 from pathlib import Path
@@ -33,6 +32,12 @@ def main() -> int:
     parser.add_argument("--max-bytes", type=int, default=hook.DEFAULT_MAX_BYTES)
     parser.add_argument("--min-savings-ratio", type=float, default=hook.DEFAULT_MIN_SAVINGS_RATIO)
     parser.add_argument("--min-saved-tokens", type=int, default=hook.DEFAULT_MIN_SAVED_TOKENS)
+    parser.add_argument(
+        "--candidate-tier",
+        choices=sorted(hook.CANDIDATE_TIERS),
+        default=hook.DEFAULT_CANDIDATE_TIER,
+        help="Candidate risk tier to evaluate. Default: safe.",
+    )
     parser.add_argument("--include-candidates", action="store_true")
     args = parser.parse_args()
 
@@ -56,13 +61,14 @@ def main() -> int:
             args.max_bytes,
             args.min_savings_ratio,
             args.min_saved_tokens,
+            args.candidate_tier,
             args.include_candidates,
         )
         for raw_path in args.paths
     ]
     report = build_report(results, cwd, out_dir, model_profile, args)
     if args.report_out:
-        report_out = resolve_output_path(args.report_out, cwd)
+        report_out = resolve_path(args.report_out, cwd)
         report_out.parent.mkdir(parents=True, exist_ok=True)
         report_out.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2, ensure_ascii=False))
@@ -77,6 +83,7 @@ def select_path(
     max_bytes: int,
     min_savings_ratio: float,
     min_saved_tokens: int,
+    candidate_tier: str,
     include_candidates: bool,
 ) -> dict[str, Any]:
     path = resolve_path(raw_path, cwd)
@@ -96,13 +103,13 @@ def select_path(
 
     source = hook.load_source(path)
     raw_tokens = hook.count_tokens(source.raw_text, model_profile)
-    candidate_rows = candidate_metrics(source, model_profile)
+    candidate_rows = candidate_metrics(source, model_profile, candidate_tier)
     if not candidate_rows:
         return {
             **base,
             "kind": source.kind,
             "bytes": path.stat().st_size,
-            "sha256": sha256_file(path),
+            "sha256": hook.sha256_file(path),
             "raw_tokens": raw_tokens,
             "error": "no reversible candidates generated",
         }
@@ -112,8 +119,12 @@ def select_path(
     saved_tokens = raw_tokens - best["total_tokens"]
     selected = best["name"] != "raw" and savings_ratio >= min_savings_ratio and saved_tokens >= min_saved_tokens
     decision = selection_decision(best["name"], savings_ratio, saved_tokens, min_savings_ratio, min_saved_tokens)
-    output_path = write_selected_sidecar(source, best["candidate"], out_dir) if selected else None
-    output_sha256 = sha256_file(output_path) if output_path else None
+    output_path = (
+        hook.write_candidate_sidecar(source, best["candidate"], out_dir, model_profile, candidate_tier)
+        if selected
+        else None
+    )
+    output_sha256 = hook.sha256_file(output_path) if output_path else None
     result = {
         **base,
         "selected": selected,
@@ -121,7 +132,7 @@ def select_path(
         "read_path": str(output_path or path),
         "kind": source.kind,
         "bytes": path.stat().st_size,
-        "sha256": sha256_file(path),
+        "sha256": hook.sha256_file(path),
         "raw_tokens": raw_tokens,
         "selected_format": best["name"],
         "selected_tokens": best["total_tokens"],
@@ -142,10 +153,14 @@ def select_path(
     return result
 
 
-def candidate_metrics(source: hook.SourceData, model_profile: hook.ModelProfile) -> list[dict[str, Any]]:
+def candidate_metrics(
+    source: hook.SourceData,
+    model_profile: hook.ModelProfile,
+    candidate_tier: str,
+) -> list[dict[str, Any]]:
     raw_tokens = hook.count_tokens(source.raw_text, model_profile)
     rows = []
-    for candidate in hook.candidates_for_profile(source, model_profile):
+    for candidate in hook.candidates_for_profile(source, model_profile, candidate_tier):
         total_tokens = hook.count_tokens(hook.candidate_blob(candidate), model_profile)
         payload_tokens = hook.count_tokens(candidate.text, model_profile)
         instruction_tokens = hook.count_tokens(candidate.instructions, model_profile)
@@ -163,14 +178,6 @@ def candidate_metrics(source: hook.SourceData, model_profile: hook.ModelProfile)
         )
     rows.sort(key=lambda row: (row["total_tokens"], row["payload_tokens"], row["name"]))
     return rows
-
-
-def write_selected_sidecar(source: hook.SourceData, candidate: hook.Candidate, out_dir: Path) -> Path:
-    blob = hook.candidate_blob(candidate)
-    digest = hashlib.sha256((str(source.path) + "\0" + candidate.text).encode("utf-8")).hexdigest()[:16]
-    output_path = out_dir / f"{source.path.stem}.{digest}.{candidate.name}.txt"
-    output_path.write_text(blob, encoding="utf-8")
-    return output_path
 
 
 def build_report(
@@ -195,6 +202,7 @@ def build_report(
         "policy": {
             "supported_extensions": sorted(hook.SUPPORTED_EXTENSIONS),
             "max_bytes": args.max_bytes,
+            "candidate_tier": args.candidate_tier,
             "min_savings_ratio": args.min_savings_ratio,
             "min_saved_tokens": args.min_saved_tokens,
             "include_candidates": args.include_candidates,
@@ -211,7 +219,7 @@ def build_report(
     }
 
 
-def resolve_path(raw_path: str, cwd: Path) -> Path:
+def resolve_path(raw_path: str | Path, cwd: Path) -> Path:
     path = Path(raw_path).expanduser()
     if not path.is_absolute():
         path = cwd / path
@@ -232,21 +240,6 @@ def selection_decision(
     if saved_tokens < min_saved_tokens:
         return "below_min_saved_tokens"
     return "selected"
-
-
-def resolve_output_path(raw_path: Path, cwd: Path) -> Path:
-    path = raw_path.expanduser()
-    if not path.is_absolute():
-        path = cwd / path
-    return path.resolve()
-
-
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 if __name__ == "__main__":
