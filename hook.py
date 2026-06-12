@@ -23,7 +23,7 @@ import shlex
 import sys
 import time
 import tomllib
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterable
@@ -36,7 +36,6 @@ CANDIDATE_TIERS = {
     "advanced": SAFE_CANDIDATES | {"codebook-json", "typed-csv", "typed-tsv"},
 }
 DEFAULT_CANDIDATE_TIER = "safe"
-STANDARD_CANDIDATES = SAFE_CANDIDATES
 SCHEMA_VERSION = "context-selector/v1"
 DEFAULT_MAX_BYTES = 5_000_000
 DEFAULT_INLINE_MAX_CHARS = 12_000
@@ -96,7 +95,7 @@ class Choice:
     instruction_tokens: int
     total_tokens: int
     savings_ratio: float
-    output_path: Path
+    output_path: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -142,7 +141,6 @@ def handle_user_prompt_submit(payload: dict[str, Any]) -> int:
     skipped: list[str] = []
 
     cache_dir = cwd / ".codex" / "context-cache"
-    cache_dir.mkdir(parents=True, exist_ok=True)
 
     for path in paths:
         try:
@@ -150,9 +148,9 @@ def handle_user_prompt_submit(payload: dict[str, Any]) -> int:
                 skipped.append(f"{path}: skipped; over {max_bytes} bytes")
                 continue
             source = load_source(path)
-            choice = choose_best(source, model_profile, cache_dir, candidate_tier)
+            choice = choose_best(source, model_profile, cache_dir, candidate_tier, persist_sidecar=False)
             if should_inject(choice, policy):
-                choices.append(choice)
+                choices.append(choice_with_sidecar(choice, source, cache_dir, model_profile, candidate_tier))
             elif report_skips:
                 skipped.append(
                     f"{path}: no injection; best={choice.candidate.name}, savings={choice.savings_ratio:.1%}"
@@ -253,14 +251,8 @@ def discover_paths(prompt: str, cwd: Path) -> list[Path]:
         raw = raw.strip()
         if not raw:
             continue
-        path = Path(raw).expanduser()
-        if not path.is_absolute():
-            path = cwd / path
-        try:
-            resolved = path.resolve()
-        except OSError:
-            continue
-        if resolved.exists() and resolved.is_file() and resolved.suffix.lower() in SUPPORTED_EXTENSIONS:
+        resolved = resolve_supported_file(raw, cwd)
+        if resolved is not None:
             candidates.add(resolved)
 
     return sorted(candidates)
@@ -283,21 +275,24 @@ def plain_cat_paths(command: str, cwd: Path) -> list[Path]:
     for raw_path in raw_paths:
         if raw_path.startswith("-"):
             return []
-        path = Path(raw_path).expanduser()
-        if not path.is_absolute():
-            path = cwd / path
-        try:
-            resolved = path.resolve()
-        except OSError:
-            return []
-        if not (
-            resolved.exists()
-            and resolved.is_file()
-            and resolved.suffix.lower() in SUPPORTED_EXTENSIONS
-        ):
+        resolved = resolve_supported_file(raw_path, cwd)
+        if resolved is None:
             return []
         paths.append(resolved)
     return paths
+
+
+def resolve_supported_file(raw_path: str, cwd: Path) -> Path | None:
+    path = Path(raw_path).expanduser()
+    if not path.is_absolute():
+        path = cwd / path
+    try:
+        resolved = path.resolve()
+    except OSError:
+        return None
+    if resolved.exists() and resolved.is_file() and resolved.suffix.lower() in SUPPORTED_EXTENSIONS:
+        return resolved
+    return None
 
 
 def build_rewrite_plan(paths: list[Path], payload: dict[str, Any], cwd: Path) -> RewritePlan | None:
@@ -312,32 +307,36 @@ def build_rewrite_plan(paths: list[Path], payload: dict[str, Any], cwd: Path) ->
     model = str(payload.get("model") or payload.get("model_id") or "unknown")
     model_profile = resolve_model_profile(model, payload, cwd)
     cache_dir = cwd / ".codex" / "context-cache"
-    cache_dir.mkdir(parents=True, exist_ok=True)
 
-    choices: list[Choice] = []
+    pending: list[tuple[SourceData, Choice]] = []
     for path in paths:
+        if pending and elapsed_milliseconds(started_at) > max_hook_ms:
+            return None
         if path.stat().st_size > max_bytes:
             return None
         source = load_source(path)
-        choice = choose_best(source, model_profile, cache_dir, candidate_tier)
-        if elapsed_milliseconds(started_at) > max_hook_ms:
-            return None
+        choice = choose_best(source, model_profile, cache_dir, candidate_tier, persist_sidecar=False)
         if not should_inject(choice, policy):
             return None
-        choices.append(choice)
+        pending.append((source, choice))
 
     local_milliseconds = elapsed_milliseconds(started_at)
+    choices = [choice for _source, choice in pending]
     if not should_rewrite_for_latency(choices, local_milliseconds, latency_policy_from_env()):
         return None
 
-    updated_command = "cat -- " + " ".join(shlex.quote(str(choice.output_path)) for choice in choices)
-    return RewritePlan(tuple(choices), updated_command)
+    persisted = [
+        choice_with_sidecar(choice, source, cache_dir, model_profile, candidate_tier)
+        for source, choice in pending
+    ]
+    updated_command = "cat -- " + " ".join(shlex.quote(str(require_output_path(choice))) for choice in persisted)
+    return RewritePlan(tuple(persisted), updated_command)
 
 
 def rewrite_summary(choice: Choice) -> str:
     percent = round(choice.savings_ratio * 100, 1)
     return (
-        f"Source: {choice.source}. Optimized: {choice.output_path}. "
+        f"Source: {choice.source}. Optimized: {require_output_path(choice)}. "
         f"Selected format: {choice.candidate.name}. "
         f"{token_count_label(choice)}: {choice.total_tokens} vs raw {choice.raw_tokens} ({percent}% savings)."
     )
@@ -349,6 +348,8 @@ def write_hook_report(
     model_profile: ModelProfile,
     adapter: str,
 ) -> Path:
+    for choice in choices:
+        require_output_path(choice)
     report_dir = cwd / ".codex" / "context-cache" / "reports"
     report_dir.mkdir(parents=True, exist_ok=True)
     digest_input = "\n".join(
@@ -402,12 +403,13 @@ def verify_hook_report(report_path: Path) -> bool:
 
 
 def choice_report(choice: Choice, model_profile: ModelProfile) -> dict[str, Any]:
+    output_path = require_output_path(choice)
     return {
         "source": str(choice.source),
         "source_name": choice.source.name,
         "selected": True,
         "decision": "selected",
-        "read_path": str(choice.output_path),
+        "read_path": str(output_path),
         "kind": choice.source.suffix.lower().lstrip("."),
         "bytes": choice.source.stat().st_size,
         "sha256": sha256_file(choice.source),
@@ -419,8 +421,8 @@ def choice_report(choice: Choice, model_profile: ModelProfile) -> dict[str, Any]
         "saved_tokens": choice.raw_tokens - choice.total_tokens,
         "savings_ratio": choice.savings_ratio,
         "token_counter_label": "estimated" if model_profile.token_counter == "deterministic-fallback" else "exact",
-        "output_path": str(choice.output_path),
-        "output_sha256": sha256_file(choice.output_path),
+        "output_path": str(output_path),
+        "output_sha256": sha256_file(output_path),
         "notes": list(choice.candidate.notes),
     }
 
@@ -455,41 +457,76 @@ def choose_best(
     model_profile: ModelProfile,
     cache_dir: Path,
     candidate_tier: str | None = None,
+    persist_sidecar: bool = True,
+    raw_tokens: int | None = None,
 ) -> Choice:
-    raw_tokens = count_tokens(source.raw_text, model_profile)
+    if raw_tokens is None:
+        raw_tokens = count_tokens(source.raw_text, model_profile)
     tier = normalize_candidate_tier(candidate_tier or DEFAULT_CANDIDATE_TIER)
-    candidates = candidates_for_profile(source, model_profile, tier)
+    candidates = generated_candidates_for_profile(source, model_profile, tier)
 
     if not candidates:
         raise ValueError("no safe candidates generated")
 
     ranked = sorted(
-        candidates,
-        key=lambda c: (
-            count_tokens(candidate_blob(c), model_profile),
-            count_tokens(c.text, model_profile),
-            len(c.text),
-            c.name,
-        ),
+        ((candidate_token_metrics(candidate, model_profile), candidate) for candidate in candidates),
+        key=lambda item: candidate_rank_key(item[1], item[0]),
     )
-    best = ranked[0]
-    best_tokens = count_tokens(best.text, model_profile)
-    instruction_tokens = count_tokens(best.instructions, model_profile)
-    total_tokens = count_tokens(candidate_blob(best), model_profile)
+    for metrics, candidate in ranked:
+        if candidate_matches_source(source, candidate):
+            best = candidate_with_roundtrip_note(candidate)
+            break
+    else:
+        raise ValueError("no reversible candidates generated")
+    total_tokens, payload_tokens, instruction_tokens = metrics
 
-    output_path = write_candidate_sidecar(source, best, cache_dir, model_profile, tier)
+    output_path = (
+        write_candidate_sidecar(source, best, cache_dir, model_profile, tier)
+        if persist_sidecar
+        else None
+    )
 
     savings_ratio = 0.0 if raw_tokens == 0 else 1.0 - (total_tokens / raw_tokens)
     return Choice(
         source=source.path,
         candidate=best,
         raw_tokens=raw_tokens,
-        payload_tokens=best_tokens,
+        payload_tokens=payload_tokens,
         instruction_tokens=instruction_tokens,
         total_tokens=total_tokens,
         savings_ratio=savings_ratio,
         output_path=output_path,
     )
+
+
+def choice_with_sidecar(
+    choice: Choice,
+    source: SourceData,
+    cache_dir: Path,
+    model_profile: ModelProfile,
+    candidate_tier: str,
+) -> Choice:
+    output_path = write_candidate_sidecar(source, choice.candidate, cache_dir, model_profile, candidate_tier)
+    return replace(choice, output_path=output_path)
+
+
+def require_output_path(choice: Choice) -> Path:
+    if choice.output_path is None:
+        raise ValueError("selected choice is missing optimized sidecar path")
+    return choice.output_path
+
+
+def candidate_token_metrics(candidate: Candidate, model_profile: ModelProfile) -> tuple[int, int, int]:
+    return (
+        count_tokens(candidate_blob(candidate), model_profile),
+        count_tokens(candidate.text, model_profile),
+        count_tokens(candidate.instructions, model_profile),
+    )
+
+
+def candidate_rank_key(candidate: Candidate, metrics: tuple[int, int, int]) -> tuple[int, int, int, str]:
+    total_tokens, payload_tokens, _instruction_tokens = metrics
+    return (total_tokens, payload_tokens, len(candidate.text), candidate.name)
 
 
 def savings_policy_from_env() -> dict[str, float | int]:
@@ -574,12 +611,20 @@ def candidates_for_profile(
     model_profile: ModelProfile,
     candidate_tier: str | None = None,
 ) -> list[Candidate]:
+    return verify_candidates(source, generated_candidates_for_profile(source, model_profile, candidate_tier))
+
+
+def generated_candidates_for_profile(
+    source: SourceData,
+    model_profile: ModelProfile,
+    candidate_tier: str | None = None,
+) -> list[Candidate]:
     tier = normalize_candidate_tier(candidate_tier or DEFAULT_CANDIDATE_TIER)
-    candidates = validated_candidates(source, CANDIDATE_TIERS[tier])
+    candidates = generate_candidates(source, CANDIDATE_TIERS[tier])
     if model_profile.token_counter != "deterministic-fallback":
         return candidates
     return with_fallback_note(
-        [candidate for candidate in candidates if candidate.name in STANDARD_CANDIDATES]
+        [candidate for candidate in candidates if candidate.name in SAFE_CANDIDATES]
     )
 
 
@@ -608,6 +653,7 @@ def write_candidate_sidecar(
     model_profile: ModelProfile,
     candidate_tier: str,
 ) -> Path:
+    out_dir.mkdir(parents=True, exist_ok=True)
     digest = sidecar_digest(source, candidate, model_profile, candidate_tier)
     output_path = out_dir / f"{source.path.stem}.{digest}.{candidate.name}.txt"
     if not output_path.exists():
@@ -710,21 +756,29 @@ def generate_candidates(source: SourceData, allowed_names: set[str] | None = Non
 
 
 def validated_candidates(source: SourceData, allowed_names: set[str] | None = None) -> list[Candidate]:
+    return verify_candidates(source, generate_candidates(source, allowed_names))
+
+
+def verify_candidates(source: SourceData, candidates: Iterable[Candidate]) -> list[Candidate]:
     verified: list[Candidate] = []
-    for candidate in generate_candidates(source, allowed_names):
+    for candidate in candidates:
         if not candidate.reversible:
             continue
         if candidate_matches_source(source, candidate):
-            verified.append(
-                Candidate(
-                    candidate.name,
-                    candidate.text,
-                    candidate.reversible,
-                    candidate.instructions,
-                    (*candidate.notes, "roundtrip verified"),
-                )
-            )
+            verified.append(candidate_with_roundtrip_note(candidate))
     return verified
+
+
+def candidate_with_roundtrip_note(candidate: Candidate) -> Candidate:
+    if "roundtrip verified" in candidate.notes:
+        return candidate
+    return Candidate(
+        candidate.name,
+        candidate.text,
+        candidate.reversible,
+        candidate.instructions,
+        (*candidate.notes, "roundtrip verified"),
+    )
 
 
 def candidate_matches_source(source: SourceData, candidate: Candidate) -> bool:
@@ -738,6 +792,15 @@ def candidate_blob(candidate: Candidate) -> str:
     if not candidate.instructions:
         return candidate.text
     return candidate.instructions + "\n" + candidate.text
+
+
+def candidate_text_from_blob(candidate_name: str, blob: str) -> str:
+    if candidate_name == "raw":
+        return blob
+    _instructions, separator, text = blob.partition("\n")
+    if not separator:
+        raise ValueError("candidate blob is missing decoder instruction line")
+    return text
 
 
 def rows_from_value(value: Any) -> list[dict[str, Any]]:
@@ -1158,6 +1221,7 @@ def tokenizer_json_path() -> Path | None:
     return path if path.exists() and path.is_file() else None
 
 
+@lru_cache(maxsize=None)
 def module_available(name: str) -> bool:
     return importlib.util.find_spec(name) is not None
 
@@ -1189,12 +1253,10 @@ def count_tokens(text: str, model_profile: ModelProfile) -> int:
 
     if model_profile.token_counter == "tiktoken":
         try:
-            import tiktoken  # type: ignore
-
-            try:
-                encoding = tiktoken.encoding_for_model(model_profile.slug)
-            except Exception:
-                encoding = tiktoken.get_encoding(preferred_tiktoken_encoding(model_profile.slug))
+            encoding = load_tiktoken_encoding(
+                model_profile.slug,
+                preferred_tiktoken_encoding(model_profile.slug),
+            )
             return len(encoding.encode(text))
         except Exception:
             pass
@@ -1216,6 +1278,16 @@ def preferred_tiktoken_encoding(model: str) -> str:
     if lowered.startswith(("gpt-5", "gpt-4o", "o1", "o3", "o4")):
         return "o200k_base"
     return "cl100k_base"
+
+
+@lru_cache(maxsize=16)
+def load_tiktoken_encoding(model: str, fallback_encoding: str) -> Any:
+    import tiktoken  # type: ignore
+
+    try:
+        return tiktoken.encoding_for_model(model)
+    except Exception:
+        return tiktoken.get_encoding(fallback_encoding)
 
 
 @lru_cache(maxsize=4)
@@ -1262,7 +1334,7 @@ def build_additional_context(
             [
                 "",
                 f"Source: {choice.source}",
-                f"Optimized: {choice.output_path}",
+                f"Optimized: {require_output_path(choice)}",
                 f"Selected format: {choice.candidate.name}",
                 f"{token_count_label(choice)}: {choice.total_tokens} vs raw {choice.raw_tokens} ({percent}% savings)",
                 f"Payload tokens: {choice.payload_tokens}; decoder-instruction tokens: {choice.instruction_tokens}",

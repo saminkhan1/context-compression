@@ -184,7 +184,7 @@ def add_build_args(parser: argparse.ArgumentParser) -> None:
 
 def add_run_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS_DIR)
-    parser.add_argument("--model", default="gpt-5.5")
+    parser.add_argument("--model", default="gpt-5.4-mini")
     parser.add_argument("--input-price-per-1m", type=float, default=0.0)
     parser.add_argument("--monthly-calls", type=int, default=0)
     parser.add_argument(
@@ -574,10 +574,7 @@ def validate_publication_corpus(corpus: Path) -> list[str]:
     if missing_tags:
         errors.append(f"publication corpus is missing required shape coverage: {', '.join(missing_tags)}")
 
-    supported_files = [
-        path for path in corpus.iterdir()
-        if path.is_file() and path.name != "manifest.json" and path.suffix.lower() in hook.SUPPORTED_EXTENSIONS
-    ]
+    supported_files = supported_corpus_files(corpus)
     if len(supported_files) < len(HF_DATASETS) * 4:
         errors.append(f"expected at least {len(HF_DATASETS) * 4} supported Hugging Face files, found {len(supported_files)}")
     return errors
@@ -589,11 +586,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
         errors = validate_publication_corpus(corpus)
         if errors:
             raise SystemExit("Corpus does not meet publication benchmark bar:\n" + "\n".join(errors))
-    files = sorted(
-        path
-        for path in corpus.iterdir()
-        if path.is_file() and path.name != "manifest.json" and path.suffix.lower() in hook.SUPPORTED_EXTENSIONS
-    )
+    files = supported_corpus_files(corpus)
     if not files:
         raise SystemExit(f"No supported corpus files found in {corpus}")
 
@@ -650,6 +643,14 @@ def run_benchmark(args: argparse.Namespace) -> None:
     print(f"Wrote {args.markdown_out}")
 
 
+def supported_corpus_files(corpus: Path) -> list[Path]:
+    return sorted(
+        path
+        for path in corpus.iterdir()
+        if path.is_file() and path.name != "manifest.json" and path.suffix.lower() in hook.SUPPORTED_EXTENSIONS
+    )
+
+
 def benchmark_file(
     path: Path,
     profile: hook.ModelProfile,
@@ -676,9 +677,7 @@ def benchmark_file(
     rows = []
     for candidate in candidates:
         token_start = time.perf_counter()
-        total_tokens = hook.count_tokens(hook.candidate_blob(candidate), profile)
-        payload_tokens = hook.count_tokens(candidate.text, profile)
-        instruction_tokens = hook.count_tokens(candidate.instructions, profile)
+        total_tokens, payload_tokens, instruction_tokens = hook.candidate_token_metrics(candidate, profile)
         token_count_milliseconds += elapsed_milliseconds(token_start)
         token_delta = raw_tokens - total_tokens
         rows.append(
@@ -687,10 +686,7 @@ def benchmark_file(
                 "total_tokens": total_tokens,
                 "payload_tokens": payload_tokens,
                 "instruction_tokens": instruction_tokens,
-                "token_delta": token_delta,
-                "savings_ratio": 0.0 if raw_tokens == 0 else token_delta / raw_tokens,
-                "per_call_input_cost_saved": token_delta * input_price_per_1m / 1_000_000,
-                "monthly_input_cost_saved": token_delta * input_price_per_1m * monthly_calls / 1_000_000,
+                **token_savings_fields(raw_tokens, token_delta, input_price_per_1m, monthly_calls),
             }
         )
     rows.sort(key=lambda row: (row["total_tokens"], row["candidate"]))
@@ -753,10 +749,7 @@ def benchmark_baselines(
                 "source_file": str(baseline_path),
                 "bytes": baseline_path.stat().st_size,
                 "total_tokens": total_tokens,
-                "token_delta": token_delta,
-                "savings_ratio": 0.0 if raw_tokens == 0 else token_delta / raw_tokens,
-                "per_call_input_cost_saved": token_delta * input_price_per_1m / 1_000_000,
-                "monthly_input_cost_saved": token_delta * input_price_per_1m * monthly_calls / 1_000_000,
+                **token_savings_fields(raw_tokens, token_delta, input_price_per_1m, monthly_calls),
             }
         )
     rows.sort(key=lambda row: row["baseline"])
@@ -782,10 +775,7 @@ def aggregate_results(
         "files": len(results),
         "raw_tokens": raw_tokens,
         "optimized_tokens": optimized_tokens,
-        "token_delta": token_delta,
-        "savings_ratio": 0.0 if raw_tokens == 0 else token_delta / raw_tokens,
-        "per_call_input_cost_saved": token_delta * input_price_per_1m / 1_000_000,
-        "monthly_input_cost_saved": token_delta * input_price_per_1m * monthly_calls / 1_000_000,
+        **token_savings_fields(raw_tokens, token_delta, input_price_per_1m, monthly_calls),
         "by_extension": by_extension,
         "by_source": by_source,
         "latency": latency,
@@ -822,9 +812,7 @@ def aggregate_by_key(
     for bucket in grouped.values():
         raw = bucket["raw_tokens"]
         delta = bucket["token_delta"]
-        bucket["savings_ratio"] = 0.0 if raw == 0 else delta / raw
-        bucket["per_call_input_cost_saved"] = delta * input_price_per_1m / 1_000_000
-        bucket["monthly_input_cost_saved"] = delta * input_price_per_1m * monthly_calls / 1_000_000
+        bucket.update(token_savings_fields(raw, delta, input_price_per_1m, monthly_calls, include_delta=False))
         bucket["best_formats"] = dict(sorted(bucket["best_formats"].items()))
     return dict(sorted(grouped.items()))
 
@@ -1078,9 +1066,7 @@ def aggregate_external_baselines(
     for bucket in summary.values():
         raw = bucket["raw_tokens"]
         delta = bucket["token_delta"]
-        bucket["savings_ratio"] = 0.0 if raw == 0 else delta / raw
-        bucket["per_call_input_cost_saved"] = delta * input_price_per_1m / 1_000_000
-        bucket["monthly_input_cost_saved"] = delta * input_price_per_1m * monthly_calls / 1_000_000
+        bucket.update(token_savings_fields(raw, delta, input_price_per_1m, monthly_calls, include_delta=False))
     return summary
 
 
@@ -1121,11 +1107,28 @@ def aggregate_candidate_ablation(
         raw = bucket["raw_tokens"]
         delta = bucket["token_delta"]
         files = bucket["files_available"]
-        bucket["savings_ratio"] = 0.0 if raw == 0 else delta / raw
+        bucket.update(token_savings_fields(raw, delta, input_price_per_1m, monthly_calls, include_delta=False))
         bucket["average_rank"] = 0.0 if files == 0 else bucket["rank_sum"] / files
-        bucket["per_call_input_cost_saved"] = delta * input_price_per_1m / 1_000_000
-        bucket["monthly_input_cost_saved"] = delta * input_price_per_1m * monthly_calls / 1_000_000
     return dict(sorted(summary.items(), key=lambda item: (-item[1]["wins"], item[1]["average_rank"], item[0])))
+
+
+def token_savings_fields(
+    raw_tokens: int,
+    token_delta: int,
+    input_price_per_1m: float,
+    monthly_calls: int,
+    *,
+    include_delta: bool = True,
+) -> dict[str, float | int]:
+    fields: dict[str, float | int] = {}
+    if include_delta:
+        fields["token_delta"] = token_delta
+    fields.update({
+        "savings_ratio": 0.0 if raw_tokens == 0 else token_delta / raw_tokens,
+        "per_call_input_cost_saved": token_delta * input_price_per_1m / 1_000_000,
+        "monthly_input_cost_saved": token_delta * input_price_per_1m * monthly_calls / 1_000_000,
+    })
+    return fields
 
 
 def corpus_fingerprint(corpus: Path, files: list[Path]) -> dict[str, Any]:

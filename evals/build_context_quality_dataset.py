@@ -31,7 +31,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--corpus", type=Path, default=Path("data/benchmark-corpus"))
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    parser.add_argument("--model", default="gpt-5.5")
+    parser.add_argument("--model", default="gpt-5.4-mini")
     parser.add_argument("--max-files", type=int, default=0, help="0 means all supported files.")
     args = parser.parse_args()
 

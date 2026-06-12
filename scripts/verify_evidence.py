@@ -59,16 +59,12 @@ def main() -> int:
                         "--cwd",
                         str(ROOT),
                         "--model",
-                        "gpt-5.5",
+                        "gpt-5.4-mini",
                         "--report-out",
                         str(selector_report),
+                        "--verify-report",
                         "sample-repetitive.json",
                     ],
-                    None,
-                ),
-                (
-                    "selector report verifier",
-                    [python(), "verify_selector_report.py", "--check-files", str(selector_report)],
                     None,
                 ),
                 (
@@ -78,7 +74,7 @@ def main() -> int:
                         {
                             "hook_event_name": "PreToolUse",
                             "cwd": str(ROOT),
-                            "model": "gpt-5.5",
+                            "model": "gpt-5.4-mini",
                             "tool_name": "Bash",
                             "tool_input": {"command": "cat sample-repetitive.json"},
                         }

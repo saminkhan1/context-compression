@@ -5,7 +5,7 @@ Hermes/OpenClaw-style hosts.
 
 All host integrations must follow the shared
 [`adapters/CONTRACT.md`](../CONTRACT.md): run `selector.py`, persist the report,
-verify it with `verify_selector_report.py --check-files`, and trust only the
+verify it with `--verify-report`, and trust only the
 verified `read_path`.
 
 ## Tool
@@ -63,6 +63,7 @@ python3 "$repo_root/selector.py" \
   --cwd "$cwd" \
   --adapter "$adapter_name" \
   --model "$model" \
+  --verify-report \
   "$path1" "$path2"
 ```
 
@@ -73,7 +74,7 @@ If `report_out` is present, add `--report-out "$report_out"`.
 
 For each result:
 
-- validate the full report with `verify_selector_report.py --check-files`
+- validate the full report through `selector.py --verify-report`
 - read `read_path`
 - treat `selected: true` as evidence that a sidecar was chosen
 - treat every other `decision` as a no-op

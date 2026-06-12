@@ -56,7 +56,7 @@ class BenchmarkTests(unittest.TestCase):
                 benchmark.run_benchmark(
                     SimpleNamespace(
                         corpus=corpus,
-                        model="gpt-5.5",
+                        model="gpt-5.4-mini",
                         input_price_per_1m=5.0,
                         monthly_calls=100,
                         provider_input_tokens_per_second=500.0,
@@ -110,7 +110,7 @@ class BenchmarkTests(unittest.TestCase):
                 benchmark.run_benchmark(
                     SimpleNamespace(
                         corpus=corpus,
-                        model="gpt-5.5",
+                        model="gpt-5.4-mini",
                         input_price_per_1m=5.0,
                         monthly_calls=100,
                         provider_input_tokens_per_second=0.0,

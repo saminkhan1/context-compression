@@ -11,6 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MCP_SERVER = ROOT / "adapters" / "mcp" / "context_selector_server.py"
 ADAPTER_FILES = [
+    ROOT / "adapters" / "claude-code" / "context_selector_hook.py",
     ROOT / "adapters" / "pi" / "context-selector-tool.ts",
     ROOT / "adapters" / "openclaw" / "index.ts",
     ROOT / "adapters" / "hermes-plugin" / "__init__.py",
@@ -24,7 +25,7 @@ class AdapterContractTests(unittest.TestCase):
         contract = (ROOT / "adapters" / "CONTRACT.md").read_text(encoding="utf-8")
 
         self.assertIn("selector.py", contract)
-        self.assertIn("verify_selector_report.py --check-files", contract)
+        self.assertIn("--verify-report", contract)
         self.assertIn("read_path", contract)
         self.assertIn("Never rewrite the source file", contract)
 
@@ -33,8 +34,7 @@ class AdapterContractTests(unittest.TestCase):
             with self.subTest(path=path):
                 source = path.read_text(encoding="utf-8")
                 self.assertIn("selector.py", source)
-                self.assertIn("verify_selector_report.py", source)
-                self.assertIn("--check-files", source)
+                self.assertIn("--verify-report", source)
                 self.assertIn("report", source.lower())
                 self.assertNotIn("decode_candidate_value", source)
                 self.assertNotIn("choose_best", source)
@@ -48,9 +48,20 @@ class AdapterContractTests(unittest.TestCase):
         self.assertIn('pi.on("tool_call"', source)
         self.assertIn("input.path = replacement[0]", source)
         self.assertIn("input.command = `cat -- ${replacements.map(shellQuote).join(\" \")}`", source)
-        self.assertIn("verify_selector_report.py", source)
-        self.assertIn("--check-files", source)
+        self.assertIn("--verify-report", source)
         self.assertNotIn("pi.registerTool(\n    {", source)
+
+    def test_claude_code_adapter_uses_pretooluse_shape_and_verifier(self) -> None:
+        source = (ROOT / "adapters" / "claude-code" / "context_selector_hook.py").read_text(encoding="utf-8")
+
+        self.assertIn('"PreToolUse"', source)
+        self.assertIn('"updatedInput"', source)
+        self.assertIn('"permissionDecision"', source)
+        self.assertIn('"Read"', source)
+        self.assertIn('"Bash"', source)
+        self.assertIn("--verify-report", source)
+        self.assertNotIn("decode_candidate_value", source)
+        self.assertNotIn("choose_best", source)
 
     def test_openclaw_adapter_uses_current_plugin_shape_and_verifier(self) -> None:
         plugin_dir = ROOT / "adapters" / "openclaw"
@@ -60,15 +71,12 @@ class AdapterContractTests(unittest.TestCase):
 
         self.assertIn('definePluginEntry', source)
         self.assertIn('api.registerTool', source)
-        self.assertIn('api.on(\n      "before_tool_call"', source)
-        self.assertIn('event.toolName === "read_file"', source)
-        self.assertIn('params: { ...event.params, path: replacement[0] }', source)
-        self.assertIn('event.toolName === "terminal"', source)
+        self.assertNotIn('"before_tool_call"', source)
         self.assertIn('name: "context_selector"', source)
-        self.assertIn('verify_selector_report.py', source)
-        self.assertIn('--check-files', source)
+        self.assertIn('--verify-report', source)
         self.assertIn('{ optional: true }', source)
         self.assertIn('isAbsolute(params.report_out)', source)
+        self.assertIn('await rm(tempDir, { recursive: true, force: true })', source)
         self.assertEqual(package["openclaw"]["extensions"], ["./index.ts"])
         self.assertEqual(manifest["extensions"], ["./index.ts"])
 
@@ -97,7 +105,7 @@ class AdapterContractTests(unittest.TestCase):
                         "arguments": {
                             "repo_root": str(ROOT),
                             "cwd": str(ROOT),
-                            "model": "gpt-5.5",
+                            "model": "gpt-5.4-mini",
                             "paths": ["sample-repetitive.json"],
                             "report_out": str(report_out),
                         },
@@ -125,8 +133,7 @@ class AdapterContractTests(unittest.TestCase):
         self.assertIn('name="read_file"', plugin)
         self.assertIn('override=True', plugin)
         self.assertIn('if "offset" in args or "limit" in args:', plugin)
-        self.assertIn('verify_selector_report.py', plugin)
-        self.assertIn('--check-files', plugin)
+        self.assertIn('--verify-report', plugin)
         self.assertIn('read_file', manifest)
 
 

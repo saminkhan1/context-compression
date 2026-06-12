@@ -12,8 +12,6 @@ from typing import Any
 
 import hook
 
-
-SCHEMA_VERSION = "context-selector/v1"
 DECISIONS = {"selected", "unsupported_format", "too_large", "raw_best", "below_threshold", "below_min_saved_tokens", "error"}
 
 
@@ -49,8 +47,8 @@ def validate_report(report: dict[str, Any], check_files: bool = False) -> list[s
         "report",
         errors,
     )
-    if report.get("schema_version") != SCHEMA_VERSION:
-        errors.append(f"report.schema_version must be {SCHEMA_VERSION}")
+    if report.get("schema_version") != hook.SCHEMA_VERSION:
+        errors.append(f"report.schema_version must be {hook.SCHEMA_VERSION}")
     errors.extend(validate_policy(report.get("policy")))
     if not isinstance(report.get("results"), list):
         errors.append("report.results must be a list")
@@ -256,23 +254,13 @@ def validate_round_trip(result: dict[str, Any], source_path: Path, read_path: Pa
     try:
         source = hook.load_source(source_path)
         sidecar_text = read_path.read_text(encoding="utf-8")
-        candidate_text = strip_decoder_instructions(sidecar_text, selected_format)
+        candidate_text = hook.candidate_text_from_blob(selected_format, sidecar_text)
         decoded = hook.decode_candidate_value(selected_format, candidate_text, kind)
     except Exception as exc:
         return [f"{prefix}.read_path failed round-trip decode: {exc}"]
     if decoded != source.value:
         return [f"{prefix}.read_path does not decode to source value"]
     return []
-
-
-def strip_decoder_instructions(sidecar_text: str, selected_format: str) -> str:
-    if selected_format == "raw":
-        return sidecar_text
-    _, separator, rest = sidecar_text.partition("\n")
-    if not separator:
-        raise ValueError("selected sidecar is missing decoder instruction line")
-    return rest
-
 
 def require_keys(value: dict[str, Any], keys: list[str], prefix: str, errors: list[str]) -> None:
     for key in keys:

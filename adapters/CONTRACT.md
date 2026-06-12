@@ -11,16 +11,11 @@ They must not implement independent compression logic.
    - `--adapter`
    - `--model`
    - `--report-out`
+   - `--verify-report`
    - one or more user-selected paths
 3. Persist the full `context-selector/v1` report.
-4. Validate the persisted report with:
-
-   ```sh
-   python3 verify_selector_report.py --check-files "$report_out"
-   ```
-
-5. Return the verified report to the host.
-6. Consumers may read `read_path` only after verification succeeds.
+4. Return the verified report to the host.
+5. Consumers may read `read_path` only after verification succeeds.
 
 ## Invariants
 

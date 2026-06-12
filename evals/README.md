@@ -11,7 +11,7 @@ does not call a model or require an API key:
 .venv/bin/python evals/build_context_quality_dataset.py \
   --corpus data/benchmark-corpus \
   --out evals/context-quality.generated.jsonl \
-  --model gpt-5.5
+  --model gpt-5.4-mini
 ```
 
 Verify the generated pairs locally before spending model tokens:
@@ -39,7 +39,7 @@ Run the checked-in smoke dataset with a configured Inspect model:
 
 ```sh
 .venv/bin/inspect eval evals/context_quality.py \
-  --model openai/gpt-5.5 \
+  --model openai/gpt-5.4-mini \
   --limit 2
 ```
 
@@ -49,7 +49,7 @@ file:
 ```sh
 CONTEXT_QUALITY_DATASET=context-quality.generated.jsonl \
   .venv/bin/inspect eval evals/context_quality.py \
-  --model openai/gpt-5.5
+  --model openai/gpt-5.4-mini
 ```
 
 Summarize the resulting Inspect log before treating it as evidence:

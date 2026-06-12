@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the MVP from a fresh temporary checkout copy."""
+"""Verify a fresh temporary checkout copy."""
 
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ def main() -> int:
         run("install requirements", [str(py), "-m", "pip", "install", "-r", "requirements.txt"], checkout)
         run("chmod hook runner", ["chmod", "+x", "run-hook.sh"], checkout)
         run("unit suite", [str(py), "-m", "unittest", "discover", "-s", "tests"], checkout)
-        run("four harness smokes", [str(py), "scripts/run_harness_smokes.py"], checkout)
+        run("harness smokes", [str(py), "scripts/run_harness_smokes.py"], checkout)
         run("lean evidence gate", [str(py), "scripts/verify_evidence.py"], checkout)
         print(f"clean install ok: {checkout}")
         return 0

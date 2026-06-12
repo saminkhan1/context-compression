@@ -86,27 +86,25 @@ evidence plumbing from being mistaken for a valid result.
 Run the harness source-contract gate when adapter support changes:
 
 ```sh
-.venv/bin/python scripts/verify_harness_contracts.py \
-  --upstream-root /tmp/context-compression-upstream
+.venv/bin/python scripts/verify_harness_contracts.py
 ```
 
-This checks official upstream source checkouts for the Codex `PreToolUse`
-rewrite contract, Pi extension tool registration and mutable `tool_call`
-events, OpenClaw `before_tool_call` parameter rewrite and plugin tool
-registration, Hermes Agent plugin tool override support for `read_file`, and
-Hermes Agent MCP stdio configuration surface. It is a separate gate from local
-smokes; if it fails, local smokes are not sufficient evidence of installable
-harness support.
+This checks the actual host code used for the Codex `PreToolUse` Bash rewrite,
+the installed Claude Code hook fields, Hermes Agent plugin override support for
+`read_file`, Hermes Agent MCP stdio configuration, and OpenClaw's current
+plugin tool registration surface. It is a separate gate from local smokes; if
+it fails, local smokes are not sufficient evidence of installable harness
+support.
 
-Run the clean-install gate before tagging an MVP candidate:
+Run the clean-install gate before tagging a release candidate:
 
 ```sh
 python3 scripts/verify_clean_install.py
 ```
 
 This proves setup from a temporary clean copy: fresh virtualenv, runtime
-dependency install, hook runner permissions, unit tests, four harness smokes,
-and the lean evidence gate.
+dependency install, hook runner permissions, unit tests, harness smokes, and
+the lean evidence gate.
 
 Build or refresh the corpus:
 

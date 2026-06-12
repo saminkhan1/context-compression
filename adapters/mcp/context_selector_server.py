@@ -157,20 +157,13 @@ def run_context_selector(arguments: dict[str, Any]) -> str:
             model,
             "--report-out",
             str(report_path),
+            "--verify-report",
         ]
         if bool(arguments.get("include_candidates")):
             selector_args.append("--include-candidates")
         selector_args.extend(paths)
         selector = subprocess.run(
             selector_args,
-            cwd=repo_root,
-            text=True,
-            capture_output=True,
-            check=True,
-        )
-
-        subprocess.run(
-            [sys.executable, str(repo_root / "verify_selector_report.py"), "--check-files", str(report_path)],
             cwd=repo_root,
             text=True,
             capture_output=True,

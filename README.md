@@ -2,8 +2,8 @@
 
 Reduce the token cost of structured files before they enter an AI agent's
 context window. This repo provides a deterministic, lossless context-compression
-selector for JSON, JSONL, CSV, and TSV data used by Codex, Pi, Hermes Agent,
-OpenClaw, MCP tools, and generic agent runtimes.
+selector for JSON, JSONL, CSV, and TSV data used by Codex, Claude Code, Pi,
+Hermes Agent, OpenClaw, MCP tools, and generic agent runtimes.
 
 Given a structured data file, the selector compares reversible representations
 for the active model tokenizer and returns the lowest-token version that
@@ -33,7 +33,7 @@ Face tokenizer JSON files.
 
 ## Benchmark Snapshot
 
-Latest checked-in corpus run: `gpt-5.5` via `tiktoken`, 28 JSON/JSONL/CSV/TSV
+Latest checked-in corpus run: `gpt-5.4-mini` via `tiktoken`, 28 JSON/JSONL/CSV/TSV
 files across public tabular, QA, conversation, review, code/documentation, log,
 and GitHub metadata datasets.
 
@@ -101,8 +101,12 @@ injecting explanatory metadata into the conversation.
   `cat data.json` or `cat a.json b.csv` to `cat` optimized sidecars.
 - Codex `UserPromptSubmit`: no-ops by default because current Codex hooks cannot
   invisibly replace prompt text or app-injected file attachment content.
-- Pi, Hermes Agent, and OpenClaw adapters expose the same selector for
-  whole-file reads in their native extension or plugin surfaces.
+- Claude Code `PreToolUse`: rewrites whole-file `Read` calls and simple Bash
+  `cat` reads through verified sidecars. Bash rewrites use `ask`, so Claude Code
+  shows the changed command rather than silently auto-approving shell execution.
+- Pi and Hermes Agent adapters can substitute verified sidecars for supported
+  whole-file reads in their native extension or plugin surfaces. OpenClaw
+  exposes the same selector as an explicit optional plugin tool.
 - Semantic file operations stay raw: `jq`, `grep`, `sed`, `head`, Python
   scripts, pipes, `cat -n`, mixed unsupported files, or files that fail the
   savings gate all no-op.
@@ -157,8 +161,10 @@ default token-savings policy only.
 CONTEXT_OPTIMIZER_MAX_HOOK_LATENCY_MS=500
 ```
 
-If selection exceeds that ceiling, the hook no-ops and leaves the original
-command untouched.
+If the hook is already over that ceiling before starting another file, it no-ops
+and leaves the original command untouched. If a first valid rewrite has already
+been computed and verified, the hook returns it instead of discarding the paid
+cold-start work.
 
 ## Candidate Formats
 
@@ -215,6 +221,34 @@ Disable Codex by removing that `[[hooks.PreToolUse]]` block or setting
 `hooks = false`. Uninstall by removing the repo checkout and any generated
 `.codex/context-cache/` directories in the workspaces where you used it.
 
+### Claude Code
+
+Add the hook to `~/.claude/settings.json` or a project-level
+`.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CONTEXT_SELECTOR_REPO_ROOT=/absolute/path/to/context-compression /absolute/path/to/context-compression/adapters/claude-code/context_selector_hook.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The hook only rewrites JSON, JSONL, CSV, and TSV whole-file `Read` calls and
+simple `cat file.json` commands. Paginated reads, pipes, shell metacharacters,
+unsupported formats, or failed selector verification no-op. Disable Claude Code
+by removing that `PreToolUse` hook block.
+
 ### Pi
 
 Register [`adapters/pi/context-selector-tool.ts`](adapters/pi/context-selector-tool.ts)
@@ -244,10 +278,12 @@ plugin and point it at this checkout:
 export CONTEXT_SELECTOR_REPO_ROOT=/absolute/path/to/context-compression
 ```
 
-The plugin registers an invisible `before_tool_call` hook that rewrites
-whole-file `read_file` calls and simple `terminal` `cat` calls to verified
-sidecars. The explicit `context_selector` tool remains available for manual
-evidence collection and returns only the verified selector output.
+Current OpenClaw plugin code exposes optional tools through `api.registerTool`.
+It does not expose a supported transparent tool-call rewrite surface for this
+adapter. The plugin therefore registers only `context_selector`: an explicit
+tool that runs `selector.py --verify-report` and returns the verified selector
+output. OpenClaw callers should read only the verified `read_path` values from
+that report.
 
 Disable OpenClaw by removing the plugin from the active plugin list. Uninstall
 by deleting the plugin registration and this repo checkout.
@@ -287,12 +323,12 @@ The regression suite includes a real Hugging Face tabular fixture derived from
 [`julien-c/titanic-survival`](https://hf.co/datasets/julien-c/titanic-survival).
 The checked-in JSON fixture has 887 records and verifies a concrete optimizer
 result in the default safe tier: `column-json`, `21460` tokenizer tokens versus
-raw `71983` on `gpt-5.5`, a `70.2%` reduction.
+raw `71983` on `gpt-5.4-mini`, a `70.2%` reduction.
 
 Manual smoke test:
 
 ```sh
-printf '%s\n' '{"hook_event_name":"PreToolUse","cwd":"'"$PWD"'","model":"gpt-5.5","tool_name":"Bash","tool_input":{"command":"cat sample-repetitive.json"}}' \
+printf '%s\n' '{"hook_event_name":"PreToolUse","cwd":"'"$PWD"'","model":"gpt-5.4-mini","tool_name":"Bash","tool_input":{"command":"cat sample-repetitive.json"}}' \
   | ./run-hook.sh
 ```
 
@@ -300,7 +336,7 @@ Expected result: `hookSpecificOutput.updatedInput.command` points at an
 optimized sidecar file. The default output does not include `additionalContext`;
 the model receives the rewritten tool output without optimizer narration.
 
-Run all four harness smokes:
+Run all harness smokes:
 
 ```sh
 .venv/bin/python scripts/run_harness_smokes.py
@@ -312,8 +348,7 @@ glue or install instructions, also verify the actual upstream harness source
 contracts:
 
 ```sh
-.venv/bin/python scripts/verify_harness_contracts.py \
-  --upstream-root /tmp/context-compression-upstream
+.venv/bin/python scripts/verify_harness_contracts.py
 ```
 
 See
@@ -325,6 +360,12 @@ Or run them individually:
 ```sh
 .venv/bin/python -m unittest \
   tests.test_harness_smokes.HarnessSmokeTests.test_codex_pretooluse_smoke_rewrites_to_verified_sidecar
+
+.venv/bin/python -m unittest \
+  tests.test_harness_smokes.HarnessSmokeTests.test_claude_code_read_smoke_rewrites_to_verified_sidecar
+
+.venv/bin/python -m unittest \
+  tests.test_harness_smokes.HarnessSmokeTests.test_claude_code_bash_smoke_rewrites_cat_to_verified_sidecar
 
 .venv/bin/python -m unittest \
   tests.test_harness_smokes.HarnessSmokeTests.test_pi_smoke_returns_verified_report_with_selected_read_path
@@ -354,7 +395,7 @@ Set up the no-API quality-eval skeleton without calling a paid model:
 .venv/bin/python evals/build_context_quality_dataset.py \
   --corpus data/benchmark-corpus \
   --out evals/context-quality.generated.jsonl \
-  --model gpt-5.5
+  --model gpt-5.4-mini
 
 .venv/bin/python evals/verify_context_quality_dataset.py \
   evals/context-quality.generated.jsonl
@@ -372,7 +413,7 @@ python3 scripts/verify_clean_install.py
 
 This copies the current checkout without generated caches, creates a fresh
 `.venv`, installs `requirements.txt`, makes `run-hook.sh` executable, runs the
-unit suite, runs the four harness smokes, and runs the lean evidence gate.
+unit suite, runs the harness smokes, and runs the lean evidence gate.
 
 ## Generic Selector CLI
 
@@ -382,7 +423,7 @@ using a runtime adapter:
 ```sh
 .venv/bin/python selector.py \
   --cwd "$PWD" \
-  --model gpt-5.5 \
+  --model gpt-5.4-mini \
   --adapter codex-manual \
   --report-out reports/selector-report.json \
   --include-candidates \
@@ -408,17 +449,18 @@ source hash, sidecar hash, sidecar path, and selected sidecar round-trip are
 still valid.
 
 See [docs/selector-evidence-layer.md](docs/selector-evidence-layer.md) for the
-general selector contract and the Codex, Pi, Hermes, and OpenClaw adapter
-shape. Adapter starting points live under [`adapters/`](adapters/). The Pi
-adapter is a current TypeScript extension with a transparent `tool_call` hook
-plus an explicit evidence tool. Hermes can use the native `read_file` override
-plugin in
+general selector contract and the Codex, Claude Code, Pi, Hermes, and OpenClaw
+adapter shape. Adapter starting points live under [`adapters/`](adapters/).
+Claude Code can use the command hook in
+[`adapters/claude-code/`](adapters/claude-code/). The Pi adapter is a current
+TypeScript extension with a transparent `tool_call` hook plus an explicit
+evidence tool. Hermes can use the native `read_file` override plugin in
 [`adapters/hermes-plugin/`](adapters/hermes-plugin/) and the stdio MCP evidence
 adapter in
 [`adapters/mcp/context_selector_server.py`](adapters/mcp/context_selector_server.py).
 OpenClaw can use the optional plugin in
-[`adapters/openclaw/`](adapters/openclaw/) with a transparent
-`before_tool_call` hook plus an explicit evidence tool.
+[`adapters/openclaw/`](adapters/openclaw/) as an explicit verified selector
+tool.
 
 ## Tester Feedback
 

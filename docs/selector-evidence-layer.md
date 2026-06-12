@@ -1,7 +1,7 @@
 # Selector And Evidence Layer
 
 This repo is a selector and evidence layer for multiple AI-agent runtimes:
-Codex, Pi, Hermes Agent, OpenClaw, MCP, and generic shell adapters.
+Codex, Claude Code, Pi, Hermes Agent, OpenClaw, MCP, and generic shell adapters.
 
 ## Product Contract
 
@@ -27,8 +27,8 @@ The product surface is:
 
 - **Selector core**: `selector.py` emits `context-selector/v1` JSON for agents
   and harnesses.
-- **Runtime adapters**: Codex, Pi, Hermes Agent, and OpenClaw wrappers stay thin
-  and host-specific.
+- **Runtime adapters**: Codex, Claude Code, Pi, Hermes Agent, and OpenClaw
+  wrappers stay thin and host-specific.
 - **Benchmark and eval evidence**: `benchmark.py`, `reports/`, `EVIDENCE.md`,
   and `evals/` prove token, latency, fidelity, and answer-parity behavior.
 
@@ -43,7 +43,7 @@ Other agents should call:
 ```sh
 .venv/bin/python selector.py \
   --cwd "$PWD" \
-  --model gpt-5.5 \
+  --model gpt-5.4-mini \
   --adapter pi-extension \
   --report-out .codex/context-cache/selector-report.json \
   --include-candidates \
@@ -79,17 +79,18 @@ Agents should only substitute the sidecar when `selected` is `true`. Every other
 decision is a no-op. The simplest adapter rule is: read `read_path`, and only
 announce or persist an optimization when `selected` is `true`.
 
-Before substituting, adapters should run the executable verifier:
+Before substituting, adapters should ask the selector to verify the emitted
+report:
 
 ```sh
-python3 verify_selector_report.py --check-files .codex/context-cache/selector-report.json
+python3 selector.py --verify-report --report-out .codex/context-cache/selector-report.json ...
 ```
 
-That verifier enforces the trust boundary for hosts that do not share Codex's
-hook runtime: selected rows must read the generated sidecar, no-op rows must read
-the original source, summary token math must match the row data, and file checks
-must prove the source hash, sidecar hash, read path, and selected sidecar
-round-trip are still valid.
+That verifier mode enforces the trust boundary for hosts that do not share
+Codex's hook runtime: selected rows must read the generated sidecar, no-op rows
+must read the original source, summary token math must match the row data, and
+file checks must prove the source hash, sidecar hash, read path, and selected
+sidecar round-trip are still valid.
 
 - `unsupported_format`
 - `too_large`
@@ -123,6 +124,15 @@ The Codex adapter should stay conservative. It should not rewrite commands
 whose purpose depends on exact bytes, formatting, line numbers, delimiters, or
 shell semantics.
 
+## Claude Code Adapter
+
+Claude Code uses [`adapters/claude-code/context_selector_hook.py`](../adapters/claude-code/context_selector_hook.py)
+as a `PreToolUse` command hook with a `Read|Bash` matcher. It rewrites only
+whole-file `Read` calls and simple Bash `cat` reads after
+`selector.py --verify-report` returns selected `read_path` values. Bash rewrites
+return `permissionDecision: "ask"` so Claude Code shows the modified command to
+the user.
+
 ## Pi Adapter Shape
 
 Pi exposes TypeScript extensions that can intercept input, tool calls, context,
@@ -130,8 +140,8 @@ and provider requests. Its README also documents JSON/RPC and SDK modes.
 
 Current first integration:
 
-- a Pi extension tool that shells out to `selector.py`, persists a selector
-  report, and verifies it with `verify_selector_report.py --check-files`
+- a Pi extension tool that shells out to `selector.py --verify-report` and
+  persists a verified selector report
 - a `tool_call` hook that rewrites only whole-file `read` calls and simple
   `bash cat` calls when the selector report says every requested file is
   `selected: true`
@@ -187,13 +197,11 @@ Hermes registers the MCP tool with its `mcp_<server>_<tool>` prefix, so this
 becomes `mcp_context_selector_context_selector` in the Hermes tool namespace.
 
 For OpenClaw, use the optional plugin in
-[`adapters/openclaw/`](../adapters/openclaw/). It follows the current SDK shape:
-`definePluginEntry`, focused `openclaw/plugin-sdk/plugin-entry` import,
-`api.on("before_tool_call", ...)`, and
-`api.registerTool(..., { optional: true })`. The transparent hook rewrites
-whole-file `read_file` calls and simple `terminal` `cat` calls only after
-persisting and verifying the selector report. The optional tool remains for
-manual evidence collection.
+[`adapters/openclaw/`](../adapters/openclaw/). Current OpenClaw source exposes
+`definePluginEntry` and `api.registerTool`, but not a supported transparent
+tool-call rewrite surface for plugins. The adapter therefore registers only an
+explicit optional `context_selector` tool. Callers should use the verified
+`read_path` values in the returned report when they want optimized content.
 
 The generic shell-backed tool shape lives at
 [`adapters/generic/context-selector-tool.md`](../adapters/generic/context-selector-tool.md).

@@ -1,9 +1,9 @@
 # Context Compression Benchmark Report
 
-Generated: `2026-05-22T01:48:33+00:00`
+Generated: `2026-05-22T03:18:51+00:00`
 Corpus: `data/benchmark-corpus`
-Corpus manifest SHA-256: `b5c6d37899170f72692b3cc2a705d187a7af789f3ab6a69ccad923a43be92c08`
-Model: `gpt-5.5` via `tiktoken`
+Corpus manifest SHA-256: `57b59d1b3d128953ddd15f6001a1793337b8c679acce5a21dbaeb2eb17e868cc`
+Model: `gpt-5.4-mini` via `tiktoken`
 Input price: `$5.0000` per 1M tokens
 Monthly calls: `100000`
 
@@ -17,7 +17,7 @@ Monthly calls: `100000`
 
 | Load ms | Candidate ms | Token-count ms | Total ms | Saved tokens / ms | Break-even max input tok/s |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 333.8 | 5760.1 | 41342.4 | 47436.9 | 49.0 | 49011.6 |
+| 351.4 | 5832.1 | 42420.1 | 48604.4 | 47.8 | 47834.3 |
 
 Break-even interpretation: compression is latency-positive only when the downstream model's input throughput is at or below the break-even ceiling above.
 

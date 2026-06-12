@@ -466,5 +466,5 @@ prompt parallelism, and general LLM-as-compressor data-compression papers.
 - Benchmark rerun against `data/benchmark-corpus` completed and wrote
   `reports/benchmark-report.json` and `reports/benchmark-report.md`.
 - The latest local benchmark shows 24 files, 17,333,717 raw tokens,
-  15,067,226 optimized tokens, and 2,266,491 tokens saved on `gpt-5.5` with
+  15,067,226 optimized tokens, and 2,266,491 tokens saved on `gpt-5.4-mini` with
   `tiktoken`.

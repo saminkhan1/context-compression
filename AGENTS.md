@@ -42,7 +42,7 @@ Install optional eval dependencies only when running quality evals:
 - Run the manual hook smoke when changing `PreToolUse` command rewriting:
 
 ```sh
-printf '%s\n' '{"hook_event_name":"PreToolUse","cwd":"'"$PWD"'","model":"gpt-5.5","tool_name":"Bash","tool_input":{"command":"cat sample-repetitive.json"}}' \
+printf '%s\n' '{"hook_event_name":"PreToolUse","cwd":"'"$PWD"'","model":"gpt-5.4-mini","tool_name":"Bash","tool_input":{"command":"cat sample-repetitive.json"}}' \
   | ./run-hook.sh
 ```
 
@@ -61,7 +61,7 @@ printf '%s\n' '{"hook_event_name":"PreToolUse","cwd":"'"$PWD"'","model":"gpt-5.5
 
 ```sh
 .venv/bin/inspect eval evals/context_quality.py \
-  --model openai/gpt-5.5 \
+  --model openai/gpt-5.4-mini \
   --limit 2
 ```
 

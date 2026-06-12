@@ -68,9 +68,9 @@ stdlib-backed compact JSON, columnar/codebook JSON, CSV/TSV, and typed CSV/TSV
 for offline evaluation. In this repo:
 
 - `sample-repetitive.json`: default safe-tier `column-json`, `1419` exact
-  tokenizer tokens vs raw `4102` on `gpt-5.5`.
+  tokenizer tokens vs raw `4102` on `gpt-5.4-mini`.
 - Hugging Face `julien-c/titanic-survival` JSON fixture: `codebook-json`, `20791`
-  exact tokenizer tokens vs raw `71983` on `gpt-5.5`.
+  exact tokenizer tokens vs raw `71983` on `gpt-5.4-mini`.
 
 ### Adjacent projects already exist
 
@@ -105,7 +105,7 @@ several public data sources and materializes JSON, JSONL, CSV, and TSV variants.
 Current local run:
 
 - 24 downloaded files
-- 17.3M raw `gpt-5.5` tokenizer tokens
+- 17.3M raw `gpt-5.4-mini` tokenizer tokens
 - 2.27M input tokens saved
 - JSON savings: 20.8%
 - JSONL savings: 15.3%

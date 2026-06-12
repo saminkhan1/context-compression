@@ -52,7 +52,7 @@ def _selected_read_path(args: dict[str, Any], task_id: str) -> str | None:
     if not repo_root:
         return None
     repo = Path(repo_root).expanduser().resolve()
-    if not (repo / "selector.py").is_file() or not (repo / "verify_selector_report.py").is_file():
+    if not (repo / "selector.py").is_file():
         return None
 
     try:
@@ -95,15 +95,9 @@ def _run_selector(repo: Path, source_path: Path) -> Path | None:
                 os.environ.get("CONTEXT_SELECTOR_MODEL", "unknown"),
                 "--report-out",
                 str(report_out),
+                "--verify-report",
                 str(source_path),
             ],
-            cwd=repo,
-            text=True,
-            capture_output=True,
-            check=True,
-        )
-        subprocess.run(
-            ["python3", str(repo / "verify_selector_report.py"), "--check-files", str(report_out)],
             cwd=repo,
             text=True,
             capture_output=True,

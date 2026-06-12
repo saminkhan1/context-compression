@@ -6,8 +6,10 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import hook
+import selector
 import verify_selector_report
 
 
@@ -34,7 +36,7 @@ class SelectorCliTests(unittest.TestCase):
                     "--adapter",
                     "test-adapter",
                     "--model",
-                    "gpt-5.5",
+                    "gpt-5.4-mini",
                     "--include-candidates",
                     "sample-repetitive.json",
                 ],
@@ -100,7 +102,7 @@ class SelectorCliTests(unittest.TestCase):
                     "--out-dir",
                     str(out_dir),
                     "--model",
-                    "gpt-5.5",
+                    "gpt-5.4-mini",
                     "--min-savings-ratio",
                     "0.99",
                     "sample-repetitive.json",
@@ -138,7 +140,7 @@ class SelectorCliTests(unittest.TestCase):
                     "--out-dir",
                     str(out_dir),
                     "--model",
-                    "gpt-5.5",
+                    "gpt-5.4-mini",
                     "--min-saved-tokens",
                     "999999",
                     "sample-repetitive.json",
@@ -173,7 +175,7 @@ class SelectorCliTests(unittest.TestCase):
                     "--out-dir",
                     str(out_dir),
                     "--model",
-                    "gpt-5.5",
+                    "gpt-5.4-mini",
                     "sample-repetitive.json",
                 ],
                 text=True,
@@ -201,7 +203,7 @@ class SelectorCliTests(unittest.TestCase):
                     "--out-dir",
                     str(out_dir),
                     "--model",
-                    "gpt-5.5",
+                    "gpt-5.4-mini",
                     "sample-repetitive.json",
                 ],
                 text=True,
@@ -228,7 +230,7 @@ class SelectorCliTests(unittest.TestCase):
                     "--out-dir",
                     str(out_dir),
                     "--model",
-                    "gpt-5.5",
+                    "gpt-5.4-mini",
                     "sample-repetitive.json",
                 ],
                 text=True,
@@ -255,7 +257,7 @@ class SelectorCliTests(unittest.TestCase):
                     "--out-dir",
                     str(out_dir),
                     "--model",
-                    "gpt-5.5",
+                    "gpt-5.4-mini",
                     "sample-repetitive.json",
                 ],
                 text=True,
@@ -285,7 +287,7 @@ class SelectorCliTests(unittest.TestCase):
                     "--report-out",
                     str(report_out),
                     "--model",
-                    "gpt-5.5",
+                    "gpt-5.4-mini",
                     "sample-repetitive.json",
                 ],
                 text=True,
@@ -317,6 +319,34 @@ class SelectorCliTests(unittest.TestCase):
         self.assertIn("output_sha256", result_properties)
         self.assertIn("candidate_tier", policy_required)
         self.assertIn("min_saved_tokens", policy_required)
+
+    def test_candidate_metrics_reuses_supplied_raw_token_count(self) -> None:
+        source = hook.SourceData(
+            path=ROOT / "sample-data.json",
+            kind="json",
+            value=[],
+            raw_text="[]",
+        )
+        profile = hook.ModelProfile(
+            slug="test",
+            provider="test",
+            tokenizer_family="fallback",
+            token_counter="deterministic-fallback",
+            context_window=None,
+            auto_compact_token_limit=None,
+            source="test",
+        )
+        candidate = hook.Candidate("compact-json", "[]", True, "Minified JSON.")
+
+        with (
+            mock.patch.object(selector.hook, "candidates_for_profile", return_value=[candidate]),
+            mock.patch.object(selector.hook, "candidate_token_metrics", return_value=(5, 2, 3)),
+            mock.patch.object(selector.hook, "count_tokens", side_effect=AssertionError("raw tokens were recounted")),
+        ):
+            rows = selector.candidate_metrics(source, profile, "safe", raw_tokens=42)
+
+        self.assertEqual(rows[0]["saved_tokens"], 37)
+        self.assertEqual(rows[0]["savings_ratio"], 1.0 - (5 / 42))
 
     def assert_selector_contract(self, report: dict[str, object]) -> None:
         self.assertEqual(report["schema_version"], "context-selector/v1")

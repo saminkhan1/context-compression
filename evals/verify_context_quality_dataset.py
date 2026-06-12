@@ -98,7 +98,7 @@ def rows_from_record_context(record: dict[str, Any], source_kind: str, source_va
     if context_format == "raw":
         value = hook.decode_candidate_value("raw", context, source_kind)
     elif context_format:
-        candidate_text = strip_decoder_instructions(context)
+        candidate_text = hook.candidate_text_from_blob(context_format, context)
         value = hook.decode_candidate_value(context_format, candidate_text, source_kind)
     else:
         value = infer_optimized_value(context, source_kind, source_value)
@@ -115,19 +115,11 @@ def extract_data_context(input_text: str) -> str:
         raise ValueError("input must contain Data and Question sections")
     return input_text[len(prefix) : input_text.index(separator)]
 
-
-def strip_decoder_instructions(context: str) -> str:
-    _, separator, rest = context.partition("\n")
-    if not separator:
-        raise ValueError("optimized context is missing decoder instruction line")
-    return rest
-
-
 def infer_optimized_value(context: str, source_kind: str, source_value: Any) -> Any:
-    candidate_text = strip_decoder_instructions(context)
     candidates = sorted(set().union(*hook.CANDIDATE_TIERS.values()) - {"raw"})
     for candidate in candidates:
         try:
+            candidate_text = hook.candidate_text_from_blob(candidate, context)
             value = hook.decode_candidate_value(candidate, candidate_text, source_kind)
         except Exception:
             continue

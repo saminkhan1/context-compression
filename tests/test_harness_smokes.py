@@ -22,7 +22,7 @@ class HarnessSmokeTests(unittest.TestCase):
         payload = {
             "hook_event_name": "PreToolUse",
             "cwd": str(ROOT),
-            "model": "gpt-5.5",
+            "model": "gpt-5.4-mini",
             "tool_name": "Bash",
             "tool_input": {"command": "cat sample-repetitive.json"},
         }
@@ -37,6 +37,53 @@ class HarnessSmokeTests(unittest.TestCase):
         output = json.loads(proc.stdout)
         self.assertEqual(output["hookSpecificOutput"]["hookEventName"], "PreToolUse")
         self.assertTrue(output["hookSpecificOutput"]["updatedInput"]["command"].startswith("cat -- "))
+
+    def test_claude_code_read_smoke_rewrites_to_verified_sidecar(self) -> None:
+        payload = {
+            "hook_event_name": "PreToolUse",
+            "cwd": str(ROOT),
+            "model": "claude-sonnet-4-5",
+            "tool_name": "Read",
+            "tool_input": {"file_path": "sample-repetitive.json"},
+        }
+        proc = subprocess.run(
+            [sys.executable, str(ROOT / "adapters" / "claude-code" / "context_selector_hook.py")],
+            input=json.dumps(payload),
+            text=True,
+            capture_output=True,
+            check=True,
+            cwd=ROOT,
+        )
+        output = json.loads(proc.stdout)
+        hook_output = output["hookSpecificOutput"]
+        self.assertEqual(hook_output["hookEventName"], "PreToolUse")
+        self.assertEqual(hook_output["permissionDecision"], "allow")
+        self.assertIn(".codex/context-cache/sample-repetitive.", hook_output["updatedInput"]["file_path"])
+        self.assertTrue(hook_output["updatedInput"]["file_path"].endswith(".column-json.txt"))
+
+    def test_claude_code_bash_smoke_rewrites_cat_to_verified_sidecar(self) -> None:
+        payload = {
+            "hook_event_name": "PreToolUse",
+            "cwd": str(ROOT),
+            "model": "claude-sonnet-4-5",
+            "tool_name": "Bash",
+            "tool_input": {"command": "cat sample-repetitive.json", "description": "inspect sample"},
+        }
+        proc = subprocess.run(
+            [sys.executable, str(ROOT / "adapters" / "claude-code" / "context_selector_hook.py")],
+            input=json.dumps(payload),
+            text=True,
+            capture_output=True,
+            check=True,
+            cwd=ROOT,
+        )
+        output = json.loads(proc.stdout)
+        hook_output = output["hookSpecificOutput"]
+        self.assertEqual(hook_output["hookEventName"], "PreToolUse")
+        self.assertEqual(hook_output["permissionDecision"], "ask")
+        self.assertEqual(hook_output["updatedInput"]["description"], "inspect sample")
+        self.assertTrue(hook_output["updatedInput"]["command"].startswith("cat -- "))
+        self.assertIn(".codex/context-cache/sample-repetitive.", hook_output["updatedInput"]["command"])
 
     def test_pi_smoke_returns_verified_report_with_selected_read_path(self) -> None:
         result = run_node_harness_smoke(
@@ -54,7 +101,7 @@ class HarnessSmokeTests(unittest.TestCase):
               {
                 repoRoot,
                 cwd: repoRoot,
-                model: "gpt-5.5",
+                model: "gpt-5.4-mini",
                 paths: ["sample-repetitive.json"],
                 reportOut,
               },
@@ -70,7 +117,7 @@ class HarnessSmokeTests(unittest.TestCase):
               toolCallId: "read-1",
               input: { path: "sample-repetitive.json" },
             };
-            await hook(readEvent, { cwd: repoRoot, model: { id: "gpt-5.5" } });
+            await hook(readEvent, { cwd: repoRoot, model: { id: "gpt-5.4-mini" } });
             console.log(JSON.stringify({
               details: response.details,
               report: JSON.parse(response.content[0].text),
@@ -90,11 +137,8 @@ class HarnessSmokeTests(unittest.TestCase):
             "openclaw",
             """
             process.env.CONTEXT_SELECTOR_REPO_ROOT = repoRoot;
-            const registration = { tool: null, options: null, hooks: new Map() };
+            const registration = { tool: null, options: null };
             mod.register({
-              on(hookName, handler) {
-                registration.hooks.set(hookName, handler);
-              },
               resolvePath(path) {
                 return path.startsWith("/") ? path : `${repoRoot}/${path}`;
               },
@@ -107,21 +151,14 @@ class HarnessSmokeTests(unittest.TestCase):
             const response = await registration.tool.execute("call-1", {
               repo_root: repoRoot,
               cwd: repoRoot,
-              model: "gpt-5.5",
+              model: "gpt-5.4-mini",
               paths: ["sample-repetitive.json"],
               report_out: reportOut,
             });
-            const hook = registration.hooks.get("before_tool_call");
-            if (!hook) throw new Error("openclaw adapter did not register before_tool_call hook");
-            const hookResult = await hook(
-              { toolName: "read_file", params: { path: "sample-repetitive.json" } },
-              { toolName: "read_file", modelId: "gpt-5.5" },
-            );
             console.log(JSON.stringify({
               details: response.details,
               report: JSON.parse(response.content[0].text),
               optional: registration.options?.optional === true,
-              rewrittenReadPath: hookResult?.params?.path,
             }));
             """,
         )
@@ -131,7 +168,6 @@ class HarnessSmokeTests(unittest.TestCase):
         self.assertEqual(report["schema_version"], "context-selector/v1")
         self.assertEqual(report["results"][0]["read_path"], report["results"][0]["output_path"])
         self.assertEqual(report["results"][0]["decision"], "selected")
-        self.assertEqual(result["rewrittenReadPath"], report["results"][0]["read_path"])
 
     def test_hermes_agent_mcp_smoke_returns_verified_report_with_selected_read_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -158,7 +194,7 @@ class HarnessSmokeTests(unittest.TestCase):
                         "arguments": {
                             "repo_root": str(ROOT),
                             "cwd": str(ROOT),
-                            "model": "gpt-5.5",
+                            "model": "gpt-5.4-mini",
                             "paths": ["sample-repetitive.json"],
                             "report_out": str(report_out),
                         },
@@ -229,7 +265,7 @@ def run_node_harness_smoke(adapter: str, harness_logic: str) -> dict[str, object
         elif adapter == "openclaw":
             adapter_source = ROOT / "adapters" / "openclaw" / "index.ts"
             write_package(
-                node_modules / "@sinclair" / "typebox",
+                node_modules / "typebox",
                 """
                 export const Type = {
                   String: (options = {}) => ({ type: "string", ...options }),

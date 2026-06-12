@@ -89,7 +89,7 @@ class EvalDatasetBuilderTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            records = build_records(corpus, "gpt-5.5")
+            records = build_records(corpus, "gpt-5.4-mini")
             errors = verify_records(records)
 
         self.assertEqual(errors, [])
@@ -97,7 +97,7 @@ class EvalDatasetBuilderTests(unittest.TestCase):
         self.assertTrue(all("source_kind" in record for record in records))
 
     def test_context_quality_verifier_rejects_target_drift(self) -> None:
-        records = build_records(ROOT / "tests" / "fixtures", "gpt-5.5", max_files=1)
+        records = build_records(ROOT / "tests" / "fixtures", "gpt-5.4-mini", max_files=1)
         records[0]["target"] = "__wrong__"
 
         errors = verify_records(records)
@@ -119,7 +119,7 @@ class EvalDatasetBuilderTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            records = build_records(corpus, "gpt-5.5")
+            records = build_records(corpus, "gpt-5.4-mini")
             optimized = next(
                 record
                 for record in records

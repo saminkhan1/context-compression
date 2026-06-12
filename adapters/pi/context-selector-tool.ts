@@ -48,6 +48,7 @@ const contextSelectorTool = defineTool({
       params.model,
       "--report-out",
       reportOut,
+      "--verify-report",
     ];
     if (params.includeCandidates) selectorArgs.push("--include-candidates");
     selectorArgs.push(...params.paths);
@@ -56,12 +57,6 @@ const contextSelectorTool = defineTool({
       cwd: params.repoRoot,
       encoding: "utf8",
       maxBuffer: 10 * 1024 * 1024,
-    });
-
-    await execFileAsync("python3", [`${params.repoRoot}/verify_selector_report.py`, "--check-files", reportOut], {
-      cwd: params.repoRoot,
-      encoding: "utf8",
-      maxBuffer: 1024 * 1024,
     });
 
     return {
@@ -133,6 +128,7 @@ async function selectedReadPath(
     model,
     "--report-out",
     reportOut,
+    "--verify-report",
     ...paths,
   ];
   try {
@@ -140,11 +136,6 @@ async function selectedReadPath(
       cwd: repoRoot,
       encoding: "utf8",
       maxBuffer: 10 * 1024 * 1024,
-    });
-    await execFileAsync("python3", [join(repoRoot, "verify_selector_report.py"), "--check-files", reportOut], {
-      cwd: repoRoot,
-      encoding: "utf8",
-      maxBuffer: 1024 * 1024,
     });
     const report = JSON.parse(stdout) as {
       results?: Array<{ selected?: boolean; read_path?: string }>;
