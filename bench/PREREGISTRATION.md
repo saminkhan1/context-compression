@@ -106,4 +106,24 @@ Frozen immediately before the first confirmatory run (sha256 prefixes):
 
 ## Deviations
 
-(none yet)
+1. **Usage-limit outage (2026-11-20).** The CLI account hit its 5-hour usage limit during the confirmatory
+   runs, and calls that failed on it were saved as error rows (large-9003 `code` 108/239, small-9002
+   `agent-nopreview` 149/239, DataBench `agent` 173 of 1,572). These are infrastructure failures, not
+   model answers, so the rows were deleted and re-run with no other change. `cli()` in harness.py was then
+   patched to wait out a usage limit (retry every 10 minutes, up to 12 hours) instead of recording an error;
+   this touches no prompt, arm or scoring logic. harness.py hash changed accordingly (see git history).
+
+2. **Compute cuts (2026-11-20, decided before any of these arms had been run).** To save tokens the
+   following planned arms were dropped and are *not* part of the confirmatory study: the 3x repeats of
+   `code`/`agent` on seed 777 (so run-to-run variance is not measured), `ctab2`, `tool` and `toon-think`,
+   in-context `toon` on large seed 9001, and the DataBench in-context `table` arm. Consequences:
+   H1 (vs reading, large files) has no confirmatory test; the only in-context large-regime evidence is the
+   full 239-question run on dev seed 777 and is labelled dev. H4's in-context comparison is dropped.
+   In-context `toon` is still run on the three small-regime seeds.
+3. **Reading cost computed offline (2026-11-20, no model calls).** The token cost of reading a file in
+   context is deterministic, so for the large regime on seeds 9001-9003 the in-context TOON cost is
+   *estimated* by tokenising the exact prompts (o200k) and scaling by the per-dataset Claude/o200k ratio
+   measured on dev seed 777 (the estimate reproduces seed 777's measured mean, 51,605 vs 51,631; fresh
+   seeds: 51,702 / 51,474 / 51,380 tokens per question). The token half of H1 is therefore reported from
+   this estimate, labelled as estimated; the accuracy half rests on dev seed 777 plus the three fresh
+   small-regime in-context runs.

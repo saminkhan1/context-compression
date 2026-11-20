@@ -60,13 +60,21 @@ def cli(prompt: str, cwd: str, tools: list[str] | None = None, think: bool = Fal
     cmd = base_cmd(think) + (tools if tools is not None else ["--tools", ""])
     env = {**os.environ, "MAX_THINKING_TOKENS": "8000" if think else "0"}
     last = {"error": "no attempt"}
-    for attempt in range(4):  # infrastructure failures (throttling, timeouts) are retried, not scored as wrong
+    waited = 0
+    attempt = 0
+    while attempt < 4:  # infrastructure failures (throttling, timeouts) are retried, not scored as wrong
+        attempt += 1
         try:
             p = subprocess.run(cmd, input=prompt, capture_output=True, text=True, cwd=cwd, env=env, timeout=600)
             d = json.loads(p.stdout)
             if not d.get("is_error"):
                 return d
             last = {"error": str(d.get("result"))[-500:]}
+            if "hit your" in str(d.get("result")) and "limit" in str(d.get("result")) and waited < 12 * 3600:
+                time.sleep(600)  # usage-limit window: wait it out (up to 12 h) instead of recording an error
+                waited += 600
+                attempt -= 1
+                continue
         except (json.JSONDecodeError, subprocess.TimeoutExpired) as e:
             last = {"error": f"{type(e).__name__}: {(locals().get('p') and (p.stdout + p.stderr)[-300:]) or ''}"}
         time.sleep(5 * (attempt + 1))
