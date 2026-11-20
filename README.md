@@ -25,9 +25,11 @@ tokens (input, output, all turns, overhead):
 
 | Regime | Code from schema preview | Baseline | Fewer billed tokens |
 | --- | --- | --- | --- |
-| 100–2,000 rows | **100%** at 1,221 tok/Q | plain Bash agent, no preview: 93.8% at 18,127 | **14.8×** |
-| 100–2,000 rows | **98.3%** at 1,236 tok/Q | TOON in context: 68.8% at 51,697 | **41.8×** |
+| 100–2,000 rows | **98.3%** at 1,236 tok/Q | plain Bash agent, no preview: 95.0% at 18,981 | **15.4×** |
+| 100–2,000 rows | **98.3%** at 1,236 tok/Q | TOON in context: 61.5% at 51,631 | **41.8×** |
 | ≤100 rows | **97.5%** at 1,230 tok/Q | TOON in context: 64.9% at 5,410 | 4.4× |
+
+All 239 questions were run for every arm in the large regime. An earlier version of this table used 32-question samples for the baselines; those were too small and are replaced. Five of the plain agent's 12 misses were chatty answers the grader rejects, so a stricter prompt would likely narrow its accuracy gap. The comparison is one seed, one model.
 
 The gain scales with size: about 1× on a 6-record config, 2–8× under 100 records, and
 11–139× from 500 to 2,000 records. The questions are templated lookups and aggregations,

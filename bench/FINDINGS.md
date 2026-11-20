@@ -12,23 +12,29 @@
    | Regime | Code-from-preview | TOON in context | Fewer billed tokens |
    | --- | --- | --- | --- |
    | Benchmark accuracy datasets (≤100 rows, 239 Q) | **97.5%**, 1,230 tok/Q | 64.9%, 5,410 tok/Q (80/2, p = 1e-21) | **4.4×** (3.8× vs cheapest lossless inline) |
-   | Benchmark token-efficiency datasets (100–2,000 rows; 239 Q; TOON paired sample n = 32) | **98.3%**, 1,236 tok/Q | 68.8%, 51,697 tok/Q (10/0, p = 0.002) | **41.8×** (31.3× vs cheapest lossless inline) |
+   | Benchmark token-efficiency datasets (100–2,000 rows; all 239 Q for every arm) | **98.3%**, 1,236 tok/Q | 61.5%, 51,631 tok/Q (89/1, p = 1.5e-25) | **41.8×** (bootstrap 95%: 36.5–47.4×) |
 
-   **Against a realistic agent baseline** (same 32 large-regime questions): a plain
-   tool-using agent with Bash (python3, jq, cat, head, grep) and no preview scored 93.8% at
-   **18,127** billed tok/Q over 3.3 turns. Code-from-preview scored 100% at **1,221**: about
-   **14.8× fewer tokens than a normal agent harness**, with accuracy no worse (2/0
-   discordant, n.s.). The agent's 2 misses were verbose answers, not wrong data. That
-   number, not the 41.8× against inline TOON, is the one to quote to a skeptic: it isolates
-   what the preview and single-turn design add over just letting an agent explore.
+   **Correction.** An earlier version reported this regime from 32-question baseline
+   samples (TOON 68.8%, plain agent 93.8%, 14.8×, code 100%). Running every question
+   gives the numbers here: the token ratios hold, and the accuracy gaps moved.
 
-   **Where 10x holds** (seed 777, billed tokens, TOON ÷ code), by dataset size:
+   **Against a realistic agent baseline** (all 239 large-regime questions): a plain
+   tool-using agent with Bash (python3, jq, cat, head, grep) and no preview scored 95.0%
+   at **18,981** billed tok/Q over 3.5 turns. Code-from-preview scored 98.3% at **1,236**:
+   **15.4× fewer tokens** (bootstrap 95%: 14.7–16.1×), accuracy 98.3% vs 95.0% (9/1
+   discordant, p = 0.02). Five of the agent's 12 misses were chatty answers ("Perfect! I
+   found...") the strict grader rejects, so a stricter prompt would likely close most of the
+   accuracy gap; the token saving is the robust result. The 15.4× is the number to quote to
+   a skeptic: it isolates what the preview and single-turn design add over just letting an
+   agent explore.
+
+**Where 10x holds** (seed 777, billed tokens, TOON ÷ code), by dataset size:
 
    | Records | Dataset | Reduction |
    | --- | --- | --- |
    | 6 | nested config | 0.9–1.0× |
-   | 40–100 | keyed, tabular, github, event logs, nested | 1.8–8.4× |
-   | 365 | analytics | 9.5× |
+   | 100 | github | 8.4× |
+   | 365 | analytics | 9.2× |
    | 500–2,000 | keyed, nested orders, nested contacts, tabular, event logs | 11–139× |
 
    So 10x holds once a dataset passes roughly 400 records. Below that, inline is the right
@@ -236,7 +242,7 @@ v1 → v2 changes, from the official-seed v1 error analysis:
 
 - One model (claude-haiku-4-5) from one family, one run per arm, and 239 questions. The
   roughly ±6 pp intervals hide small format effects; only the code/tool effect is large
-  enough to be robust to this. Large-regime TOON accuracy uses a paired sample of 32.
+  enough to be robust to this. The large regime is a single seed (777), so seed-to-seed variance is not measured.
 - The questions are templated lookups, counts, filters and aggregations, which favour
   code by construction. Semantic or free-text questions over records were not tested.
 - The headline was measured in `bench/run.py`. `selector.py --preview-above-tokens` emits
@@ -264,7 +270,7 @@ BENCH_SEED=777 node export_large.ts out/large-777     # large regime (token-effi
 python tokens.py out/seed-777                         # token efficiency, no LLM
 python run.py out/seed-777 code toon                  # needs `claude` CLI; Haiku, thinking off
 python run.py out/large-777 code
-python run.py out/large-777 toon tool-nopreview --per-dataset 4
+python run.py out/large-777 toon tool-nopreview   # all 239 questions per arm
 node grade.ts results/*/*.jsonl && python stats.py results/seed-777
 ```
 
