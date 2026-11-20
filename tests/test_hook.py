@@ -63,7 +63,7 @@ class ContextOptimizerHookTests(unittest.TestCase):
         self.assertIn("hf-julien-c-titanic-survival.json", context)
         if "token_counter=tiktoken" in context:
             self.assertIn("Selected format: column-json", context)
-            self.assertIn("Tokens: 21460 vs raw 71983 (70.2% savings)", context)
+            self.assertIn("Tokens: 21513 vs raw 71983 (70.1% savings)", context)
         elif "token_counter=deterministic-fallback" in context:
             self.assertRegex(context, r"Selected format: (compact-json|csv|tsv)")
             self.assertIn("Estimated tokens:", context)
@@ -391,9 +391,13 @@ class ContextOptimizerHookTests(unittest.TestCase):
             )
             source = hook.load_source(path)
 
-            candidate_names = {candidate.name for candidate in hook.validated_candidates(source)}
+            candidates = hook.validated_candidates(source)
+            candidate_names = {candidate.name for candidate in candidates}
+            # ctab represents absent keys explicitly (empty cell), so it stays lossless here.
+            for candidate in candidates:
+                self.assertTrue(hook.candidate_matches_source(source, candidate), candidate.name)
 
-        self.assertEqual(candidate_names, {"raw", "compact-json"})
+        self.assertEqual(candidate_names, {"raw", "compact-json", "ctab"})
 
 
 if __name__ == "__main__":

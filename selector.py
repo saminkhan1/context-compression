@@ -37,6 +37,15 @@ def main() -> int:
     )
     parser.add_argument("--include-candidates", action="store_true")
     parser.add_argument(
+        "--preview-above-tokens",
+        type=int,
+        default=0,
+        help=(
+            "Also write a labelled, lossy schema preview (preview_path) for files whose best "
+            "lossless view still exceeds this many tokens. 0 disables. See preview.py."
+        ),
+    )
+    parser.add_argument(
         "--verify-report",
         action="store_true",
         help="Validate the emitted context-selector/v1 report and selected files before printing.",
@@ -68,6 +77,9 @@ def main() -> int:
         )
         for raw_path in args.paths
     ]
+    if args.preview_above_tokens > 0:
+        for result in results:
+            add_preview(result, out_dir, model_profile, args.preview_above_tokens)
     report = build_report(results, cwd, out_dir, model_profile, args)
     if args.report_out:
         report_out = resolve_path(args.report_out, cwd)
@@ -203,6 +215,21 @@ def select_path(
             for row in candidate_rows
         ]
     return result
+
+
+def add_preview(result: dict[str, Any], out_dir: Path, model_profile: hook.ModelProfile, threshold: int) -> None:
+    import preview
+
+    best_tokens = result.get("selected_tokens") if result.get("selected") else result.get("raw_tokens")
+    if not isinstance(best_tokens, int) or best_tokens <= threshold:
+        return
+    source = hook.load_source(Path(result["source"]))
+    text = preview.labelled_preview(source.value, result["source"], hook.describe_source(source))
+    preview_path = out_dir / f"{Path(result['source']).stem}.{result['sha256'][:16]}.preview.txt"
+    preview_path.write_text(text + "\n", encoding="utf-8")
+    result["preview_path"] = str(preview_path)
+    result["preview_tokens"] = hook.count_tokens(text, model_profile)
+    result["preview_lossless"] = False
 
 
 def candidate_metrics(

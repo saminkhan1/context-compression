@@ -28,12 +28,18 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterable
 
+import ctab
+
 
 SUPPORTED_EXTENSIONS = {".json", ".jsonl", ".csv", ".tsv"}
 SAFE_CANDIDATES = {"raw", "compact-json", "column-json", "csv", "tsv"}
+# Tiers follow measured answer accuracy, not just token counts (bench/FINDINGS.md):
+# codebook-json scored 51.9% vs 60.7% for JSON on claude-haiku-4-5 (field lookups 84%
+# vs 100%), so dictionary indirection is experimental-only.
 CANDIDATE_TIERS = {
     "safe": SAFE_CANDIDATES,
-    "advanced": SAFE_CANDIDATES | {"codebook-json", "typed-csv", "typed-tsv"},
+    "advanced": SAFE_CANDIDATES | {"ctab", "typed-csv", "typed-tsv"},
+    "experimental": SAFE_CANDIDATES | {"ctab", "typed-csv", "typed-tsv", "codebook-json"},
 }
 DEFAULT_CANDIDATE_TIER = "safe"
 SCHEMA_VERSION = "context-selector/v1"
@@ -620,7 +626,7 @@ def generated_candidates_for_profile(
     candidate_tier: str | None = None,
 ) -> list[Candidate]:
     tier = normalize_candidate_tier(candidate_tier or DEFAULT_CANDIDATE_TIER)
-    candidates = generate_candidates(source, CANDIDATE_TIERS[tier])
+    candidates = with_view_header(source, generate_candidates(source, CANDIDATE_TIERS[tier]))
     if model_profile.token_counter != "deterministic-fallback":
         return candidates
     return with_fallback_note(
@@ -642,6 +648,7 @@ def sidecar_digest(source: SourceData, candidate: Candidate, model_profile: Mode
         "candidate_tier": candidate_tier,
         "candidate_name": candidate.name,
         "candidate_text_sha256": hashlib.sha256(candidate.text.encode("utf-8")).hexdigest(),
+        "candidate_instructions_sha256": hashlib.sha256(candidate.instructions.encode("utf-8")).hexdigest(),
     }
     return hashlib.sha256(json.dumps(digest_input, sort_keys=True).encode("utf-8")).hexdigest()[:16]
 
@@ -680,6 +687,16 @@ def generate_candidates(source: SourceData, allowed_names: set[str] | None = Non
             ("lossless parsed data",),
         ),
     ]
+
+    if "ctab" in allowed:
+        try:
+            ctab_text = ctab.encode(value)
+        except (TypeError, ValueError):
+            ctab_text = None
+        if ctab_text is not None:
+            candidates.append(
+                Candidate("ctab", ctab_text, True, ctab.PRIMER, ("lossless sectioned tables",))
+            )
 
     rows = rows_from_value(value)
     if rows:
@@ -757,6 +774,41 @@ def generate_candidates(source: SourceData, allowed_names: set[str] | None = Non
 
 def validated_candidates(source: SourceData, allowed_names: set[str] | None = None) -> list[Candidate]:
     return verify_candidates(source, generate_candidates(source, allowed_names))
+
+
+def describe_source(source: SourceData) -> str:
+    value = source.value
+    if source.kind in {"csv", "tsv"}:
+        return f"a {source.kind.upper()} file with {len(value)} rows"
+    if source.kind == "jsonl":
+        return f"a JSONL file with {len(value)} lines"
+    if isinstance(value, list):
+        return f"a JSON array of {len(value)} items"
+    if isinstance(value, dict):
+        keys = ", ".join(list(value)[:8]) + (", ..." if len(value) > 8 else "")
+        return f"a JSON object with keys {keys}"
+    return "a JSON value"
+
+
+def view_header(source: SourceData) -> str:
+    """Label a re-encoded view so agents never mistake it for the file's real format.
+
+    Without this, a model that reads a column-json view of a JSON array writes code that
+    indexes data[0]/data[1] and crashes on the real file (bench/FINDINGS.md, probe).
+    """
+    return (
+        f"[Context view of {source.path.name}: on disk it is {describe_source(source)}. "
+        "Below is the same data re-encoded losslessly to save tokens; code or edits must "
+        "target the on-disk format.] "
+    )
+
+
+def with_view_header(source: SourceData, candidates: list[Candidate]) -> list[Candidate]:
+    header = view_header(source)
+    return [
+        candidate if candidate.name == "raw" else replace(candidate, instructions=header + candidate.instructions)
+        for candidate in candidates
+    ]
 
 
 def verify_candidates(source: SourceData, candidates: Iterable[Candidate]) -> list[Candidate]:
@@ -967,6 +1019,8 @@ def decode_candidate_value(name: str, text: str, source_kind: str) -> Any:
         return decode_column_json(text)
     if name == "codebook-json":
         return decode_codebook_json(text)
+    if name == "ctab":
+        return ctab.decode(text)
     if name == "csv":
         return decode_json_table(text, ",")
     if name == "tsv":

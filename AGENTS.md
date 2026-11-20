@@ -15,6 +15,7 @@
 - Keep selection deterministic for a fixed input file, model profile, tokenizer, and candidate set.
 - Keep semantic file operations raw. Commands such as `jq`, `grep`, `sed`, `head`, pipes, `cat -n`, mixed unsupported files, and failed savings gates should no-op.
 - Supported source formats are JSON, JSONL, CSV, and TSV unless the README and tests are updated with a new supported format.
+- `preview.py` (selector `--preview-above-tokens`) is the one deliberately lossy surface. It must stay opt-in, labelled as a preview with the real path, and never be selected as a candidate or substituted silently.
 - For exact token claims, use `tiktoken` for OpenAI models or a configured Hugging Face `tokenizer.json`. If the deterministic fallback counter is used, label counts as estimated.
 
 ## Setup

@@ -1,5 +1,7 @@
 # Context Compression Benchmark Report
 
+> **Not refreshed (Nov 2026):** produced when `codebook-json` was in the `advanced` tier. It has since moved to `experimental` after measured accuracy loss, and `ctab` and view headers were added. These token numbers no longer reproduce with the current selector. Current evidence: [`bench/FINDINGS.md`](bench/FINDINGS.md).
+
 Generated: `2026-05-22T03:18:51+00:00`
 Corpus: `data/benchmark-corpus`
 Corpus manifest SHA-256: `57b59d1b3d128953ddd15f6001a1793337b8c679acce5a21dbaeb2eb17e868cc`

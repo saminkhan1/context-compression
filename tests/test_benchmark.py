@@ -40,7 +40,7 @@ class BenchmarkTests(unittest.TestCase):
             )
 
     def test_run_benchmark_writes_json_and_markdown_reports(self) -> None:
-        rows = [{"id": 1, "team": "red"}, {"id": 2, "team": "blue"}]
+        rows = [{"id": i, "team": ("red", "blue")[i % 2]} for i in range(40)]
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             corpus = root / "corpus"
@@ -96,7 +96,7 @@ class BenchmarkTests(unittest.TestCase):
             self.assertLess(markdown.index("| `json` |"), markdown.index("## Projected Latency"))
 
     def test_run_benchmark_can_generate_command_baselines(self) -> None:
-        rows = [{"id": 1, "team": "red"}, {"id": 2, "team": "blue"}]
+        rows = [{"id": i, "team": ("red", "blue")[i % 2]} for i in range(40)]
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             corpus = root / "corpus"

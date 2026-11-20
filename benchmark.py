@@ -1215,7 +1215,7 @@ def markdown_report(report: dict[str, Any]) -> str:
                 f"{bucket['optimized_tokens']} | {bucket['token_delta']} | "
                 f"{bucket['savings_ratio']:.1%} | {winning} |"
             )
-    if pricing["provider_input_tokens_per_second"] > 0:
+    if pricing["provider_input_tokens_per_second"] > 0 and break_even["projected_input_latency_saved_milliseconds"] is not None:
         projected = break_even["projected_net_latency_saved_milliseconds"]
         lines.extend(
             [

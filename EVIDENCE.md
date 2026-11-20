@@ -1,5 +1,7 @@
 # Evidence And Benchmarking
 
+> **Not refreshed (Nov 2026):** produced when `codebook-json` was in the `advanced` tier. It has since moved to `experimental` after measured accuracy loss, and `ctab` and view headers were added. These token numbers no longer reproduce with the current selector. Current evidence: [`bench/FINDINGS.md`](bench/FINDINGS.md).
+
 This project should be evaluated as a deterministic structured-context format
 selector, not as a semantic prompt compressor.
 

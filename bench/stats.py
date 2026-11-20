@@ -1,0 +1,85 @@
+"""Summarize graded results: accuracy (Wilson 95% CI), tokens, paired exact McNemar vs baselines.
+
+Usage: python stats.py results/seed-12345
+"""
+from __future__ import annotations
+
+import json
+import math
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+from scipy.stats import binomtest
+
+
+def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
+    if n == 0:
+        return (0.0, 0.0)
+    p = k / n
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
+    return c - h, c + h
+
+
+def load(d: Path) -> dict[str, dict[str, dict]]:
+    arms = {}
+    for f in sorted(d.glob("*.graded.jsonl")):
+        recs = [json.loads(l) for l in open(f) if l.strip()]
+        arms[f.name.removesuffix(".graded.jsonl")] = {r["id"]: r for r in recs}
+    return arms
+
+
+def mcnemar(a: dict, b: dict) -> tuple[int, int, int, float]:
+    ids = sorted(set(a) & set(b))
+    a_only = sum(1 for i in ids if a[i]["isCorrect"] and not b[i]["isCorrect"])
+    b_only = sum(1 for i in ids if b[i]["isCorrect"] and not a[i]["isCorrect"])
+    n = a_only + b_only
+    p = binomtest(a_only, n, 0.5).pvalue if n else 1.0
+    return len(ids), a_only, b_only, p
+
+
+def main() -> None:
+    d = Path(sys.argv[1])
+    arms = load(d)
+    print(f"{'arm':12}{'n':>5}{'acc':>8}{'95% CI':>16}{'avg in tok':>12}{'avg $':>9}{'errors':>8}")
+    for name, recs in arms.items():
+        rs = list(recs.values())
+        k = sum(r["isCorrect"] for r in rs)
+        lo, hi = wilson(k, len(rs))
+        tok = sum(r.get("input_tokens", 0) for r in rs) / len(rs)
+        cost = sum(r.get("cost_usd") or 0 for r in rs) / len(rs)
+        err = sum(1 for r in rs if r.get("error") or r.get("is_error"))
+        print(f"{name:12}{len(rs):>5}{k/len(rs):>8.1%}{f'[{lo:.1%},{hi:.1%}]':>16}{tok:>12.0f}{cost:>9.4f}{err:>8}")
+
+    print("\nBy question type (accuracy):")
+    types = sorted({r["type"] for recs in arms.values() for r in recs.values()})
+    print(f"{'arm':12}" + "".join(f"{t[:14]:>16}" for t in types))
+    for name, recs in arms.items():
+        row = f"{name:12}"
+        for t in types:
+            rs = [r for r in recs.values() if r["type"] == t]
+            row += f"{(sum(r['isCorrect'] for r in rs) / len(rs) if rs else float('nan')):>16.1%}"
+        print(row)
+
+    print("\nBy dataset (accuracy):")
+    dsets = sorted({r["dataset"] for recs in arms.values() for r in recs.values()})
+    print(f"{'arm':12}" + "".join(f"{t[:12]:>13}" for t in dsets))
+    for name, recs in arms.items():
+        row = f"{name:12}"
+        for t in dsets:
+            rs = [r for r in recs.values() if r["dataset"] == t]
+            row += f"{(sum(r['isCorrect'] for r in rs) / len(rs) if rs else float('nan')):>13.1%}"
+        print(row)
+
+    print("\nPaired exact McNemar (A-only correct / B-only correct, two-sided p):")
+    names = list(arms)
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            n, ao, bo, p = mcnemar(arms[a], arms[b])
+            print(f"  {a:>12} vs {b:<12} n={n:<4} {ao:>3} / {bo:<3} p={p:.3g}")
+
+
+if __name__ == "__main__":
+    main()

@@ -39,34 +39,67 @@ agent reads a structured file
 
 ## Current Evidence
 
-Latest checked-in downloaded-corpus run:
+Full write-up, method, and raw per-question results: [`bench/FINDINGS.md`](bench/FINDINGS.md)
+(Nov 2026). Everything below was measured on the official
+[TOON retrieval benchmark](https://github.com/toon-format/toon/tree/main/benchmarks), with
+its own datasets, questions, and deterministic grader.
 
-- Model: `gpt-5.4-mini` via `tiktoken`
-- Corpus: 28 JSON/JSONL/CSV/TSV files from public tabular, QA, conversation,
-  review, code/documentation, log, and GitHub metadata datasets
-- Candidate tier: benchmark path includes advanced candidates; runtime hooks
-  default to the safer tier
+**Headline (fresh, untuned seed; system-level: the model writes code against the file
+instead of reading the rows).** All billed tokens are counted (input, output, all turns,
+overhead):
 
-| Raw tokens | Optimized tokens | Saved tokens | Savings |
-| ---: | ---: | ---: | ---: |
-| 17,496,442 | 15,171,483 | 2,324,959 | 13.3% |
+| Regime | Code from schema preview ([`preview.py`](preview.py)) | TOON in context | Fewer billed tokens |
+| --- | --- | --- | --- |
+| ≤100 rows | **97.5%** at 1,230 tok/Q | 64.9% at 5,410 tok/Q | **4.4×** |
+| 100–2,000 rows | **98.3%** at 1,236 tok/Q | 68.8% at 51,697 tok/Q | **41.8×** |
 
-Best source-family reductions in that run:
+Against a plain tool-using agent (Bash, no preview) on the same large questions: 93.8% at
+18,127 tok/Q vs **100% at 1,221 tok/Q, 14.8× fewer**.
 
-| Source family | Savings | Winning format |
-| --- | ---: | --- |
-| SQuAD QA rows | 72.7% | codebook-json |
-| Titanic tabular rows | 50.5% | codebook-json |
-| LogHub 2.0 logs | 41.5% | codebook-json |
-| GitHub repository metadata | 29.1% | codebook-json |
+The reduction scales with size: about 1× on a 6-record config, 2–8× under 100 records,
+and 11–139× for 500–2,000 records. Below roughly 400 records, inline lossless views
+(below) are the better choice. This compares a code-executing reader with in-context
+formats, on templated retrieval questions with one model (claude-haiku-4-5); see
+[`bench/FINDINGS.md`](bench/FINDINGS.md) for caveats, including the github-dataset
+disclosure.
 
-See [`reports/benchmark-report.md`](reports/benchmark-report.md) and
-[`EVIDENCE.md`](EVIDENCE.md) for the full corpus, commands, per-file results,
-baseline handling, and limits of the claim.
+```sh
+.venv/bin/python selector.py --preview-above-tokens 4000 data/big.json   # adds a labelled preview_path
+```
 
-Important boundary: the repo currently proves deterministic token savings and
-round-trip safety. Full answer-parity evidence across model families is still
-an optional eval path, not a completed production claim.
+**Tokens** (TOON's token-efficiency datasets, o200k_base, primer and view header included):
+
+| Encoding | Total tokens | vs TOON |
+| --- | ---: | ---: |
+| JSON compact | 366,981 | +9.9% |
+| TOON | 334,046 | – |
+| this selector, `advanced` tier (picks `ctab` on 7/8 datasets) | **246,038** | **−26.3%** |
+
+**Accuracy** (claude-haiku-4-5, 239 questions, official seed 12345):
+
+| Arm | Accuracy | Data tokens / question |
+| --- | ---: | ---: |
+| JSON pretty | 60.7% | 6,964 |
+| TOON | 66.1% | 4,154 |
+| `ctab` (this repo) | 61.9% | 3,503 |
+| `codebook-json` (former best candidate) | 51.9% | 5,103 |
+| schema preview + Bash/python tool (2 turns; billed 10.3k input tok/Q) | 97.1% | 232 |
+
+What this means:
+
+- `ctab` matches JSON's accuracy (p = 0.63) at half the tokens. It is still slightly *below*
+  TOON on accuracy (p = 0.04), but it is the best of any inline format per token.
+- Lossless is not the same as answer-preserving. `codebook-json` was lossless and scored
+  lowest, so it now lives in the `experimental` tier.
+- The largest lever is the harness, not the notation. For large files or
+  aggregation/filtering questions, give the model a schema preview and let it query the
+  file.
+- Every sidecar view is now labelled with the file's on-disk format. Without the label, an
+  agent shown a re-encoded view wrote code for the wrong file shape.
+
+The earlier 28-file corpus run (13.3% aggregate savings) is still documented in
+[`reports/benchmark-report.md`](reports/benchmark-report.md) and [`EVIDENCE.md`](EVIDENCE.md).
+It measured tokens only.
 
 ## Quick Start
 
@@ -165,10 +198,14 @@ The default runtime candidate tier is `safe`:
 - columnar JSON as `[columns, rows]`
 - CSV/TSV with JSON cells
 
-Advanced candidates are available for offline evaluation:
+Advanced candidates (opt-in):
 
-- codebook JSON as `[columns, dictionaries, rows]`
+- `ctab`: sectioned tables with grouped headers and verified list-length columns, compact
+  JSON elsewhere ([`ctab.py`](ctab.py))
 - typed CSV/TSV
+
+Experimental (`CONTEXT_OPTIMIZER_CANDIDATE_TIER=experimental`): codebook JSON as
+`[columns, dictionaries, rows]`. It measured −8.8 pp vs JSON on retrieval accuracy.
 
 Enable the larger candidate set only when you are intentionally evaluating it:
 
@@ -182,7 +219,7 @@ answer parity for the target model family.
 Selection rule:
 
 ```text
-best = argmin token_count(decoder_instructions(candidate) + candidate, model)
+best = argmin token_count(view_header + decoder_instructions(candidate) + candidate, model)
        subject to round_trip(candidate) == parsed_source_value
 
 select only if best != raw
