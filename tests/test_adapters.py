@@ -112,8 +112,6 @@ class AdapterContractTests(unittest.TestCase):
                     },
                 )
             finally:
-                proc.stdin.close()
-                proc.terminate()
                 _, stderr = proc.communicate(timeout=5)
 
             report = json.loads(result["result"]["content"][0]["text"])
