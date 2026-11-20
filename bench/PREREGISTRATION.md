@@ -98,7 +98,11 @@ confirmatory results; any deviation is listed under "Deviations" with its reason
 
 ## Freeze addendum
 
-(to be filled with file hashes and the git commit immediately before the first confirmatory run)
+Frozen immediately before the first confirmatory run (sha256 prefixes):
+
+- prompt fingerprint (harness.py + prompts): `86448b6af0773eec`
+- harness.py `5dff41cbaffebc94`, harness_db.py `e38349afa0ead4b1`, study_stats.py `6706ac47a3fcf342`, grade.ts `85ceaf5d3507e1d4`, DataBench split.json `71914dadaa17104d`
+- repo commit containing the files above: `ac822ae`  (this addendum is committed right after)
 
 ## Deviations
 
