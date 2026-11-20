@@ -17,7 +17,8 @@ export default definePluginEntry({
       {
         name: "context_selector",
         description:
-          "Select a lower-token lossless representation for local JSON, JSONL, CSV, or TSV files and return a verified context-selector/v1 report.",
+          "Select a lower-token lossless representation for local JSON, JSONL, CSV, or TSV " +
+          "files and return a verified context-selector/v1 report.",
         parameters: Type.Object({
           repo_root: Type.String({
             description: "Absolute path to the context-compression checkout.",
@@ -45,7 +46,9 @@ export default definePluginEntry({
           ),
         }),
         async execute(_toolCallId, params) {
-          const tempDir = params.report_out ? undefined : await mkdtemp(join(tmpdir(), "context-selector-openclaw-"));
+          const tempDir = params.report_out
+            ? undefined
+            : await mkdtemp(join(tmpdir(), "context-selector-openclaw-"));
           const reportOut = params.report_out
             ? isAbsolute(params.report_out)
               ? params.report_out
@@ -62,10 +65,9 @@ export default definePluginEntry({
             "--report-out",
             reportOut,
             "--verify-report",
+            ...(params.include_candidates ? ["--include-candidates"] : []),
+            ...params.paths,
           ];
-          if (params.include_candidates) selectorArgs.push("--include-candidates");
-          selectorArgs.push(...params.paths);
-
           try {
             const { stdout } = await execFileAsync("python3", selectorArgs, {
               cwd: params.repo_root,
@@ -81,7 +83,9 @@ export default definePluginEntry({
               },
             };
           } finally {
-            if (tempDir) await rm(tempDir, { recursive: true, force: true });
+            if (tempDir) {
+              await rm(tempDir, { recursive: true, force: true });
+            }
           }
         },
       },

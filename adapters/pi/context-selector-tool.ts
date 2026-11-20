@@ -36,10 +36,11 @@ const contextSelectorTool = defineTool({
     ),
   }),
   async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-    const tempDir = params.reportOut ? undefined : await mkdtemp(join(tmpdir(), "context-selector-"));
+    const tempDir = params.reportOut
+      ? undefined
+      : await mkdtemp(join(tmpdir(), "context-selector-"));
     const reportOut = params.reportOut ?? join(tempDir!, "selector-report.json");
-    const selectorArgs = [
-      `${params.repoRoot}/selector.py`,
+    const stdout = await runSelector(params.repoRoot, [
       "--cwd",
       params.cwd,
       "--adapter",
@@ -48,17 +49,9 @@ const contextSelectorTool = defineTool({
       params.model,
       "--report-out",
       reportOut,
-      "--verify-report",
-    ];
-    if (params.includeCandidates) selectorArgs.push("--include-candidates");
-    selectorArgs.push(...params.paths);
-
-    const { stdout } = await execFileAsync("python3", selectorArgs, {
-      cwd: params.repoRoot,
-      encoding: "utf8",
-      maxBuffer: 10 * 1024 * 1024,
-    });
-
+      ...(params.includeCandidates ? ["--include-candidates"] : []),
+      ...params.paths,
+    ]);
     return {
       content: [{ type: "text", text: stdout }],
       details: {
@@ -73,43 +66,53 @@ const contextSelectorTool = defineTool({
 export default function (pi: ExtensionAPI) {
   pi.registerTool(contextSelectorTool);
   pi.on("tool_call", async (event, ctx) => {
-    const repoRoot = resolveRepoRoot();
-    if (!repoRoot) return undefined;
+    const repoRoot =
+      process.env.CONTEXT_SELECTOR_REPO_ROOT ||
+      resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+    const model = ctx.model?.id ?? "unknown";
 
     if (event.toolName === "read") {
       const input = event.input as { path?: unknown; offset?: unknown; limit?: unknown };
-      if (typeof input.path !== "string" || input.offset !== undefined || input.limit !== undefined) {
+      if (
+        typeof input.path !== "string" ||
+        input.offset !== undefined ||
+        input.limit !== undefined ||
+        !SUPPORTED_EXTENSION_RE.test(input.path)
+      ) {
         return undefined;
       }
-      if (!SUPPORTED_EXTENSION_RE.test(input.path)) return undefined;
-      const replacement = await selectedReadPath(repoRoot, ctx.cwd, ctx.model?.id ?? "unknown", [input.path], "pi-read-hook");
-      if (replacement.length !== 1) return undefined;
-      input.path = replacement[0];
-      return undefined;
-    }
-
-    if (event.toolName === "bash") {
+      const replacement = await selectedReadPaths(
+        repoRoot, ctx.cwd, model, [input.path], "pi-read-hook",
+      );
+      if (replacement.length) {
+        input.path = replacement[0];
+      }
+    } else if (event.toolName === "bash") {
       const input = event.input as { command?: unknown };
-      if (typeof input.command !== "string") return undefined;
-      const paths = plainCatPaths(input.command);
-      if (!paths.length || !paths.every((path) => SUPPORTED_EXTENSION_RE.test(path))) return undefined;
-      const replacements = await selectedReadPath(repoRoot, ctx.cwd, ctx.model?.id ?? "unknown", paths, "pi-bash-hook");
-      if (replacements.length !== paths.length) return undefined;
-      input.command = `cat -- ${replacements.map(shellQuote).join(" ")}`;
-      return undefined;
+      const paths = typeof input.command === "string" ? plainCatPaths(input.command) : [];
+      if (!paths.length || !paths.every((path) => SUPPORTED_EXTENSION_RE.test(path))) {
+        return undefined;
+      }
+      const replacements = await selectedReadPaths(repoRoot, ctx.cwd, model, paths, "pi-bash-hook");
+      if (replacements.length) {
+        input.command = `cat -- ${replacements.map(shellQuote).join(" ")}`;
+      }
     }
-
     return undefined;
   });
 }
 
-function resolveRepoRoot(): string | undefined {
-  const configured = process.env.CONTEXT_SELECTOR_REPO_ROOT;
-  if (configured) return configured;
-  return resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+async function runSelector(repoRoot: string, args: string[]): Promise<string> {
+  const { stdout } = await execFileAsync(
+    "python3",
+    [join(repoRoot, "selector.py"), "--verify-report", ...args],
+    { cwd: repoRoot, encoding: "utf8", maxBuffer: 10 * 1024 * 1024 },
+  );
+  return stdout;
 }
 
-async function selectedReadPath(
+// Verified sidecar paths for every input, or [] (leave the call untouched) on any failure.
+async function selectedReadPaths(
   repoRoot: string,
   cwd: string,
   model: string,
@@ -117,34 +120,23 @@ async function selectedReadPath(
   adapter: string,
 ): Promise<string[]> {
   const tempDir = await mkdtemp(join(tmpdir(), "context-selector-pi-hook-"));
-  const reportOut = join(tempDir, "selector-report.json");
-  const selectorArgs = [
-    join(repoRoot, "selector.py"),
-    "--cwd",
-    cwd,
-    "--adapter",
-    adapter,
-    "--model",
-    model,
-    "--report-out",
-    reportOut,
-    "--verify-report",
-    ...paths,
-  ];
   try {
-    const { stdout } = await execFileAsync("python3", selectorArgs, {
-      cwd: repoRoot,
-      encoding: "utf8",
-      maxBuffer: 10 * 1024 * 1024,
-    });
-    const report = JSON.parse(stdout) as {
-      results?: Array<{ selected?: boolean; read_path?: string }>;
-    };
-    const results = report.results ?? [];
-    if (results.length !== paths.length || !results.every((result) => result.selected && result.read_path)) {
+    const stdout = await runSelector(repoRoot, [
+      "--cwd",
+      cwd,
+      "--adapter",
+      adapter,
+      "--model",
+      model,
+      "--report-out",
+      join(tempDir, "selector-report.json"),
+      ...paths,
+    ]);
+    const results: { selected: boolean; read_path: string }[] = JSON.parse(stdout).results;
+    if (results.length !== paths.length || !results.every((result) => result.selected)) {
       return [];
     }
-    return results.map((result) => result.read_path!);
+    return results.map((result) => result.read_path);
   } catch {
     return [];
   } finally {
@@ -153,14 +145,12 @@ async function selectedReadPath(
 }
 
 function plainCatPaths(command: string): string[] {
-  const trimmed = command.trim();
-  const match = trimmed.match(/^cat\s+(?:--\s+)?(.+)$/);
-  if (!match) return [];
-  const tail = match[1];
-  if (/[|;&<>`$()]/.test(tail)) return [];
-  const paths = tail.split(/\s+/).filter(Boolean);
-  if (!paths.length || paths.some((path) => path.startsWith("-"))) return [];
-  return paths;
+  const match = command.trim().match(/^cat\s+(?:--\s+)?(.+)$/);
+  if (!match || /[|;&<>`$()]/.test(match[1])) {
+    return [];
+  }
+  const paths = match[1].split(/\s+/).filter(Boolean);
+  return paths.some((path) => path.startsWith("-")) ? [] : paths;
 }
 
 function shellQuote(value: string): string {

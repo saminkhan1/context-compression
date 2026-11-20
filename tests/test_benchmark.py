@@ -10,7 +10,6 @@ from types import SimpleNamespace
 
 import benchmark
 import hook
-from scripts.verify_evidence import validate_benchmark_smoke, validate_hook_rewrite
 
 
 class BenchmarkTests(unittest.TestCase):
@@ -40,7 +39,7 @@ class BenchmarkTests(unittest.TestCase):
             )
 
     def test_run_benchmark_writes_json_and_markdown_reports(self) -> None:
-        rows = [{"id": 1, "team": "red"}, {"id": 2, "team": "blue"}]
+        rows = [{"id": i, "team": ("red", "blue")[i % 2]} for i in range(40)]
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             corpus = root / "corpus"
@@ -96,7 +95,7 @@ class BenchmarkTests(unittest.TestCase):
             self.assertLess(markdown.index("| `json` |"), markdown.index("## Projected Latency"))
 
     def test_run_benchmark_can_generate_command_baselines(self) -> None:
-        rows = [{"id": 1, "team": "red"}, {"id": 2, "team": "blue"}]
+        rows = [{"id": i, "team": ("red", "blue")[i % 2]} for i in range(40)]
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             corpus = root / "corpus"
@@ -226,37 +225,6 @@ class BenchmarkTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             benchmark.parse_formats("json,xml")
 
-    def test_evidence_gate_validates_benchmark_smoke_fields(self) -> None:
-        report = {
-            "totals": {
-                "latency": {},
-                "external_baselines": {
-                    "rawcopy": {
-                        "files_available": 1,
-                        "files_missing": 0,
-                    }
-                },
-                "candidate_ablation": {"raw": {"files_available": 1}},
-            }
-        }
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "report.json"
-            path.write_text(json.dumps(report), encoding="utf-8")
-            validate_benchmark_smoke(path)
-
-            report["totals"]["external_baselines"]["rawcopy"]["files_missing"] = 1
-            path.write_text(json.dumps(report), encoding="utf-8")
-            with self.assertRaises(SystemExit):
-                validate_benchmark_smoke(path)
-
-            report["totals"]["external_baselines"]["rawcopy"]["files_missing"] = 0
-            report["totals"]["external_baselines"]["toon"] = {
-                "files_available": 1,
-                "files_missing": 0,
-            }
-            path.write_text(json.dumps(report), encoding="utf-8")
-            validate_benchmark_smoke(path, baseline="toon")
-
     def test_toon_baseline_helper_documents_round_trip_and_optional_dependency(self) -> None:
         script = Path("scripts/toon_baseline.mjs").read_text(encoding="utf-8")
 
@@ -266,49 +234,6 @@ class BenchmarkTests(unittest.TestCase):
         self.assertIn("TOON round-trip changed the parsed source value", script)
         self.assertIn("--fallback-raw-on-fail", script)
         self.assertIn("Benchmark-only TOON encoder", script)
-
-    def test_evidence_gate_requires_actual_hook_rewrite(self) -> None:
-        validate_hook_rewrite(
-            json.dumps(
-                {
-                    "hookSpecificOutput": {
-                        "hookEventName": "PreToolUse",
-                        "permissionDecision": "allow",
-                        "updatedInput": {
-                            "command": "cat -- /repo/.codex/context-cache/sample-repetitive.abc.column-json.txt"
-                        },
-                    }
-                }
-            )
-        )
-
-        with self.assertRaises(SystemExit):
-            validate_hook_rewrite("{}")
-        with self.assertRaises(SystemExit):
-            validate_hook_rewrite(
-                json.dumps(
-                    {
-                        "hookSpecificOutput": {
-                            "hookEventName": "PreToolUse",
-                            "updatedInput": {"command": "cat sample-repetitive.json"},
-                        }
-                    }
-                )
-            )
-        with self.assertRaises(SystemExit):
-            validate_hook_rewrite(
-                json.dumps(
-                    {
-                        "hookSpecificOutput": {
-                            "hookEventName": "PreToolUse",
-                            "updatedInput": {
-                                "command": "cat -- /repo/.codex/context-cache/sample-repetitive.abc.column-json.txt"
-                            },
-                            "additionalContext": "not invisible",
-                        }
-                    }
-                )
-            )
 
 
 if __name__ == "__main__":

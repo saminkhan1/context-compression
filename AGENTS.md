@@ -4,8 +4,7 @@
 
 - This repository is a deterministic, lossless structured-context selector with adapters for Codex, Pi, Hermes Agent, OpenClaw, MCP, and generic agent runtimes.
 - Treat `selector.py` as the reusable selector surface and `hook.py` as the Codex runtime hook surface. `hook.py` handles `UserPromptSubmit` and `PreToolUse` payloads and must remain conservative.
-- Treat `benchmark.py`, `reports/`, `EVIDENCE.md`, and `PAPER_SWEEP_2025_2026.md` as evidence and research surfaces. Do not change benchmark claims without updating the matching evidence.
-- Treat `evals/` as the optional Inspect AI quality-check path, not as hook runtime code.
+- Treat `bench/` (accuracy + token benchmark on the TOON suite; write-up in `bench/FINDINGS.md`) and `benchmark.py` (token-only corpus benchmark) as evidence surfaces. Do not change README claims without updating `bench/FINDINGS.md` and its raw results.
 - Do not commit generated local artifacts from `.codex/context-cache/`, `data/benchmark-corpus/`, `logs/`, `.venv/`, or Python cache directories.
 
 ## Runtime Contract
@@ -15,6 +14,7 @@
 - Keep selection deterministic for a fixed input file, model profile, tokenizer, and candidate set.
 - Keep semantic file operations raw. Commands such as `jq`, `grep`, `sed`, `head`, pipes, `cat -n`, mixed unsupported files, and failed savings gates should no-op.
 - Supported source formats are JSON, JSONL, CSV, and TSV unless the README and tests are updated with a new supported format.
+- `preview.py` (selector `--preview-above-tokens`) is the one deliberately lossy surface. It must stay opt-in, labelled as a preview with the real path, and never be selected as a candidate or substituted silently.
 - For exact token claims, use `tiktoken` for OpenAI models or a configured Hugging Face `tokenizer.json`. If the deterministic fallback counter is used, label counts as estimated.
 
 ## Setup
@@ -23,12 +23,6 @@
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 chmod +x run-hook.sh
-```
-
-Install optional eval dependencies only when running quality evals:
-
-```sh
-.venv/bin/python -m pip install -r requirements-eval.txt
 ```
 
 ## Verification
@@ -55,14 +49,6 @@ printf '%s\n' '{"hook_event_name":"PreToolUse","cwd":"'"$PWD"'","model":"gpt-5.4
   --corpus data/benchmark-corpus \
   --input-price-per-1m 5 \
   --monthly-calls 100000
-```
-
-- Run the optional Inspect AI smoke only when touching model-quality evals or quality claims:
-
-```sh
-.venv/bin/inspect eval evals/context_quality.py \
-  --model openai/gpt-5.4-mini \
-  --limit 2
 ```
 
 ## Change Guidelines

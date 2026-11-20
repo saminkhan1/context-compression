@@ -201,8 +201,6 @@ class HarnessSmokeTests(unittest.TestCase):
                     },
                 )
             finally:
-                proc.stdin.close()
-                proc.terminate()
                 proc.communicate(timeout=5)
 
         report = json.loads(result["result"]["content"][0]["text"])
