@@ -13,7 +13,12 @@ for (const file of process.argv.slice(2).filter(f => !f.endsWith('.graded.jsonl'
     const res = r.error
       ? { match: false }
       : compareAnswers(r.actual ?? '', r.expected, r.answerType ?? 'string', r.normalizationOptions ?? undefined)
-    return JSON.stringify({ ...r, isCorrect: res.match })
+    // Sensitivity grader: same comparator on the last non-empty line, markdown and a trailing period stripped.
+    const last = (r.actual ?? '').split('\n').map((x: string) => x.trim()).filter(Boolean).pop() ?? ''
+    const cleaned = last.replace(/\*\*/g, '').replace(/^(final answer|answer)\s*[:=-]\s*/i, '').replace(/\.$/, '')
+    const lenient = r.error ? { match: false }
+      : compareAnswers(cleaned, r.expected, r.answerType ?? 'string', r.normalizationOptions ?? undefined)
+    return JSON.stringify({ ...r, isCorrect: res.match, isCorrectLenient: res.match || lenient.match })
   })
   fs.writeFileSync(file.replace(/\.jsonl$/, '.graded.jsonl'), `${graded.join('\n')}\n`)
 }
