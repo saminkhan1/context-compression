@@ -29,13 +29,14 @@ _RESERVED = {"true", "false", "null", ""}
 _BAD_KEY_CHARS = set(',{}.#\n\r":')
 _DEC = json.JSONDecoder()
 _HEAD = re.compile(r"^@(.*?)(?:\[(\d+)\]|\{(\d+)\})?$")
+_HEADER_NAME = re.compile(r"[^,{}]*")
 
 PRIMER = (
     "Data is in sections. '@name[N]' starts a table of N records: a header row, then one "
-    "comma-separated row per record in original order. A header like customer{id,name} means "
-    "nested fields customer.id and customer.name. A '#items' column gives the length of the "
-    "list in the 'items' column. Cells are plain text or JSON values; an empty cell means the "
-    "field is absent. '@name{N}' is a map of N entries: each row is 'key: values'. "
+    "comma-separated row per record in original order. A header like customer{id,name} "
+    "means nested fields customer.id and customer.name. A '#items' column gives the length "
+    "of the list in the 'items' column. Cells are plain text or JSON values; an empty cell "
+    "means the field is absent. '@name{N}' is a map of N entries: each row is 'key: values'. "
     "'@name' alone is followed by a JSON value."
 )
 
@@ -44,10 +45,8 @@ def _cj(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
 
-# ---------------------------------------------------------------- encoding
-
-def _flatten(obj: dict[str, Any], prefix: tuple[str, ...] = ()) -> dict[tuple[str, ...], Any]:
-    flat: dict[tuple[str, ...], Any] = {}
+def _flatten(obj: dict, prefix: tuple[str, ...] = ()) -> dict[tuple[str, ...], Any]:
+    flat = {}
     for key, val in obj.items():
         path = prefix + (key,)
         if isinstance(val, dict) and val:
@@ -57,19 +56,16 @@ def _flatten(obj: dict[str, Any], prefix: tuple[str, ...] = ()) -> dict[tuple[st
     return flat
 
 
-def _key_ok(k: str) -> bool:
-    return bool(k) and not (set(k) & _BAD_KEY_CHARS) and not k.startswith("@") and k == k.strip()
-
-
 def _columns(flats: list[dict]) -> list[tuple[str, ...]] | None:
     cols = list(dict.fromkeys(p for f in flats for p in f))
-    if not all(_key_ok(part) for c in cols for part in c):
-        return None
+    for k in {part for c in cols for part in c}:
+        if not k or set(k) & _BAD_KEY_CHARS or k.startswith("@") or k != k.strip():
+            return None
     colset = set(cols)
     if any(c[:i] in colset for c in cols for i in range(1, len(c))):
         return None  # a path is a leaf in one row and a group in another
     # Grouped header rendering needs each group's columns to be contiguous.
-    spans: dict[tuple[str, ...], list[int]] = {}
+    spans = {}
     for idx, c in enumerate(cols):
         for i in range(1, len(c)):
             spans.setdefault(c[:i], []).append(idx)
@@ -90,11 +86,14 @@ def _header(cols: list[tuple[str, ...]], counted: set[tuple[str, ...]]) -> str:
                 i += 1
             else:
                 j = i
-                while j < len(items) and len(items[j]) > depth + 1 and items[j][depth] == c[depth]:
+                while (
+                    j < len(items) and len(items[j]) > depth + 1 and items[j][depth] == c[depth]
+                ):
                     j += 1
                 out.append(f"{c[depth]}{{{render(items[i:j], depth + 1)}}}")
                 i = j
         return ",".join(out)
+
     return render(cols, 0)
 
 
@@ -102,86 +101,92 @@ def _parses_as_json(text: str) -> bool:
     try:
         json.loads(text)
         return True
-    except (json.JSONDecodeError, ValueError):
+    except ValueError:
         return False
 
 
 def _cell(value: Any, present: bool) -> str:
     if not present:
         return ""
-    if isinstance(value, str):
-        if (
-            value not in _RESERVED
-            and not _parses_as_json(value)
-            and value == value.strip()
-            and not value.startswith(("[", "{", '"', "@"))
-            and not any(ch in value for ch in ",\n\r")
-        ):
-            return value
+    if (
+        isinstance(value, str)
+        and value not in _RESERVED
+        and value == value.strip()
+        and not value.startswith(("[", "{", '"', "@"))
+        and not any(ch in value for ch in ",\n\r")
+        and not _parses_as_json(value)
+    ):
+        return value
     return _cj(value)
 
 
-def _row(flat: dict, cols: list[tuple[str, ...]], counted: set) -> str:
-    cells = []
-    for c in cols:
-        if c in counted:
-            v = flat.get(c)
-            cells.append(str(len(v)) if isinstance(v, list) else "")
-        cells.append(_cell(flat.get(c), c in flat))
-    return ",".join(cells)
-
-
-def _table_parts(rows: list[Any]):
+def _table_parts(rows: list[Any]) -> tuple[str, list[str]] | None:
     if not rows or not all(isinstance(r, dict) for r in rows):
         return None
     flats = [_flatten(r) for r in rows]
     cols = _columns(flats)
-    if not cols:
+    # Too many holes means very heterogeneous records.
+    if not cols or sum(len(f) for f in flats) < 0.6 * len(rows) * len(cols):
         return None
-    if sum(len(f) for f in flats) < 0.6 * len(rows) * len(cols):
-        return None  # mostly holes: very heterogeneous records
     counted = {c for c in cols if any(isinstance(f.get(c), list) and f.get(c) for f in flats)}
-    return _header(cols, counted), [_row(f, cols, counted) for f in flats]
+    lines = []
+    for flat in flats:
+        cells = []
+        for c in cols:
+            if c in counted:
+                v = flat.get(c)
+                cells.append(str(len(v)) if isinstance(v, list) else "")
+            cells.append(_cell(flat.get(c), c in flat))
+        lines.append(",".join(cells))
+    return _header(cols, counted), lines
 
 
 def _key_cell(k: str) -> str:
-    if k and ": " not in k and not k.startswith(('"', "@")) and "\n" not in k and k == k.strip() and not k.endswith(":"):
+    if (
+        k
+        and ": " not in k
+        and not k.startswith(('"', "@"))
+        and "\n" not in k
+        and k == k.strip()
+        and not k.endswith(":")
+    ):
         return k
     return _cj(k)
 
 
 def _section(name: str, val: Any) -> str:
-    if isinstance(val, list) and len(val) >= 2:
-        parts = _table_parts(val)
-        if parts:
-            header, rows = parts
-            return f"@{name}[{len(val)}]\n{header}\n" + "\n".join(rows)
-    if isinstance(val, dict) and len(val) >= 2 and all(isinstance(v, dict) and v for v in val.values()):
-        parts = _table_parts(list(val.values()))
-        if parts:
-            header, rows = parts
-            body = [f"{_key_cell(k)}: {r}" for k, r in zip(val, rows)]
-            return f"@{name}{{{len(val)}}}\n{header}\n" + "\n".join(body)
+    if isinstance(val, list) and len(val) >= 2 and (parts := _table_parts(val)):
+        header, rows = parts
+        return f"@{name}[{len(val)}]\n{header}\n" + "\n".join(rows)
+    if (
+        isinstance(val, dict)
+        and len(val) >= 2
+        and all(isinstance(v, dict) and v for v in val.values())
+        and (parts := _table_parts(list(val.values())))
+    ):
+        header, rows = parts
+        body = [f"{_key_cell(k)}: {r}" for k, r in zip(val, rows)]
+        return f"@{name}{{{len(val)}}}\n{header}\n" + "\n".join(body)
     return f"@{name}\n{_cj(val)}"
 
 
 def encode(value: Any) -> str:
-    if isinstance(value, dict) and value and all(k and not any(ch in k for ch in "\n[{") for k in value):
+    if isinstance(value, dict) and value and all(
+        k and not any(ch in k for ch in "\n[{") for k in value
+    ):
         return "\n".join(_section(k, v) for k, v in value.items())
     return _section("", value)
 
 
-# ---------------------------------------------------------------- decoding
-
 def _parse_header(text: str) -> list[tuple[str, tuple[str, ...]]]:
     """Physical cell layout: ("count" | "value", path) per cell."""
     pos = 0
-    layout: list[tuple[str, tuple[str, ...]]] = []
+    layout = []
 
     def parse(prefix: tuple[str, ...]) -> None:
         nonlocal pos
         while True:
-            name = re.match(r"[^,{}]*", text[pos:]).group(0)
+            name = _HEADER_NAME.match(text, pos).group(0)
             pos += len(name)
             if pos < len(text) and text[pos] == "{":
                 pos += 1
@@ -191,10 +196,9 @@ def _parse_header(text: str) -> list[tuple[str, tuple[str, ...]]]:
                 layout.append(("count", prefix + (name[1:],)))
             else:
                 layout.append(("value", prefix + (name,)))
-            if pos < len(text) and text[pos] == ",":
-                pos += 1
-                continue
-            return
+            if pos >= len(text) or text[pos] != ",":
+                return
+            pos += 1
 
     parse(())
     return layout
@@ -214,26 +218,19 @@ def _split_row(line: str, start: int = 0) -> list[str]:
         i = end + 1
 
 
-def _parse_cell(text: str) -> tuple[bool, Any]:
-    if text == "":
-        return False, None
-    try:
-        return True, json.loads(text)
-    except json.JSONDecodeError:
-        return True, text
-
-
 def _decode_row(cells: list[str], layout: list) -> dict[str, Any]:
-    out: dict[str, Any] = {}
-    counts: dict[tuple[str, ...], int] = {}
+    out = {}
+    counts = {}
     for (kind, path), cell in zip(layout, cells):
+        if not cell:
+            continue  # absent key, or no list to count
         if kind == "count":
-            if cell:
-                counts[path] = int(cell)
+            counts[path] = int(cell)
             continue
-        present, v = _parse_cell(cell)
-        if not present:
-            continue
+        try:
+            v = json.loads(cell)
+        except json.JSONDecodeError:
+            v = cell
         if path in counts and (not isinstance(v, list) or len(v) != counts[path]):
             raise ValueError(f"length column mismatch for {'.'.join(path)}")
         cur = out
@@ -244,29 +241,26 @@ def _decode_row(cells: list[str], layout: list) -> dict[str, Any]:
 
 
 def _complete(head: str, body: list[str]) -> bool:
-    m = _HEAD.match(head)
-    if m and (m.group(2) or m.group(3)) is not None:
-        return len(body) >= int(m.group(2) or m.group(3)) + 1
-    if not body:
-        return False
-    return _parses_as_json("\n".join(body))
+    _, n, keyed = _HEAD.match(head).groups()
+    if n or keyed:
+        return len(body) > int(n or keyed)
+    return bool(body) and _parses_as_json("\n".join(body))
 
 
 def decode(text: str) -> Any:
-    sections: list[tuple[str, list[str]]] = []
+    sections = []
     for line in text.split("\n"):
         if line.startswith("@") and (not sections or _complete(*sections[-1])):
             sections.append((line, []))
         else:
             sections[-1][1].append(line)
-    result: dict[str, Any] = {}
+    result = {}
     for head, body in sections:
-        m = _HEAD.match(head)
-        name, n, keyed = m.group(1), m.group(2), m.group(3)
-        if n is not None or keyed is not None:
+        name, n, keyed = _HEAD.match(head).groups()
+        if n or keyed:
             layout = _parse_header(body[0])
-            if keyed is not None:
-                val: Any = {}
+            if keyed:
+                val = {}
                 for line in body[1:]:
                     if line.startswith('"'):
                         key, end = _DEC.raw_decode(line, 0)

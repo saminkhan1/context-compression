@@ -12,7 +12,26 @@ from typing import Any
 
 import hook
 
-DECISIONS = {"selected", "unsupported_format", "too_large", "raw_best", "below_threshold", "below_min_saved_tokens", "error"}
+DECISIONS = {
+    "selected", "unsupported_format", "too_large", "raw_best", "below_threshold",
+    "below_min_saved_tokens", "error",
+}
+REPORT_KEYS = [
+    "schema_version", "adapter", "cwd", "out_dir", "model_profile", "policy", "summary", "results",
+]
+POLICY_KEYS = [
+    "supported_extensions", "max_bytes", "candidate_tier", "min_savings_ratio",
+    "min_saved_tokens", "include_candidates",
+]
+RESULT_KEYS = ["source", "source_name", "selected", "decision", "read_path"]
+SELECTED_KEYS = [
+    "kind", "bytes", "sha256", "raw_tokens", "selected_format", "selected_tokens",
+    "payload_tokens", "instruction_tokens", "saved_tokens", "savings_ratio",
+    "token_counter_label", "output_path", "output_sha256", "notes",
+]
+SUMMARY_KEYS = [
+    "files", "selected_files", "raw_tokens", "selected_tokens", "saved_tokens", "savings_ratio",
+]
 
 
 def main() -> int:
@@ -21,98 +40,94 @@ def main() -> int:
     parser.add_argument(
         "--check-files",
         action="store_true",
-        help="Verify referenced files exist, source SHA-256 matches, and selected sidecars round-trip.",
+        help="Verify referenced files exist, source SHA-256 matches, and selected sidecars "
+        "round-trip.",
     )
     args = parser.parse_args()
 
     try:
-        text = sys.stdin.read() if str(args.report) == "-" else args.report.read_text(encoding="utf-8")
+        if str(args.report) == "-":
+            text = sys.stdin.read()
+        else:
+            text = args.report.read_text(encoding="utf-8")
         errors = validate_report(json.loads(text), check_files=args.check_files)
     except Exception as exc:
         errors = [f"invalid report JSON: {exc}"]
 
+    for error in errors:
+        print(error, file=sys.stderr)
     if errors:
-        for error in errors:
-            print(error, file=sys.stderr)
         return 1
     print("context-selector/v1 report ok")
     return 0
 
 
 def validate_report(report: dict[str, Any], check_files: bool = False) -> list[str]:
-    errors: list[str] = []
-    require_keys(
-        report,
-        ["schema_version", "adapter", "cwd", "out_dir", "model_profile", "policy", "summary", "results"],
-        "report",
-        errors,
-    )
+    errors = missing_keys(report, REPORT_KEYS, "report")
     if report.get("schema_version") != hook.SCHEMA_VERSION:
         errors.append(f"report.schema_version must be {hook.SCHEMA_VERSION}")
-    errors.extend(validate_policy(report.get("policy")))
-    if not isinstance(report.get("results"), list):
-        errors.append("report.results must be a list")
-        return errors
+    errors += validate_policy(report.get("policy"))
+    results = report.get("results")
+    if not isinstance(results, list):
+        return errors + ["report.results must be a list"]
 
-    result_errors = []
-    raw_tokens = 0
-    selected_tokens = 0
-    selected_files = 0
-    for index, result in enumerate(report["results"]):
+    raw_tokens = selected_tokens = selected_files = 0
+    for index, result in enumerate(results):
         if not isinstance(result, dict):
-            result_errors.append(f"results[{index}] must be an object")
+            errors.append(f"results[{index}] must be an object")
             continue
-        result_errors.extend(validate_result(result, index, check_files))
-        raw = int(result.get("raw_tokens", 0) or 0)
+        errors += validate_result(result, f"results[{index}]", check_files)
+        raw = int(result.get("raw_tokens") or 0)
         raw_tokens += raw
         if result.get("selected"):
             selected_files += 1
-            selected_tokens += int(result.get("selected_tokens", 0) or 0)
+            selected_tokens += int(result.get("selected_tokens") or 0)
         else:
             selected_tokens += raw
-    errors.extend(result_errors)
-    errors.extend(validate_summary(report.get("summary"), len(report["results"]), selected_files, raw_tokens, selected_tokens))
+
+    summary = report.get("summary")
+    if not isinstance(summary, dict):
+        return errors + ["report.summary must be an object"]
+    errors += missing_keys(summary, SUMMARY_KEYS, "summary")
+    expected = {
+        "files": len(results),
+        "selected_files": selected_files,
+        "raw_tokens": raw_tokens,
+        "selected_tokens": selected_tokens,
+        "saved_tokens": raw_tokens - selected_tokens,
+    }
+    errors += [
+        f"summary.{key} must be {value}"
+        for key, value in expected.items()
+        if summary.get(key) != value
+    ]
+    if not ratio_matches(summary.get("savings_ratio", -1), raw_tokens, selected_tokens):
+        errors.append("summary.savings_ratio does not match token counts")
     return errors
 
 
 def validate_policy(policy: Any) -> list[str]:
-    errors: list[str] = []
     if not isinstance(policy, dict):
         return ["report.policy must be an object"]
-    require_keys(
-        policy,
-        [
-            "supported_extensions",
-            "max_bytes",
-            "candidate_tier",
-            "min_savings_ratio",
-            "min_saved_tokens",
-            "include_candidates",
-        ],
-        "policy",
-        errors,
-    )
+    errors = missing_keys(policy, POLICY_KEYS, "policy")
     supported = policy.get("supported_extensions")
     if not isinstance(supported, list) or not all(isinstance(item, str) for item in supported):
         errors.append("policy.supported_extensions must be a list of strings")
-    if not isinstance(policy.get("max_bytes"), int) or policy.get("max_bytes") < 0:
+    if not non_negative(policy.get("max_bytes"), int):
         errors.append("policy.max_bytes must be a non-negative integer")
     if policy.get("candidate_tier") not in hook.CANDIDATE_TIERS:
         errors.append("policy.candidate_tier is invalid")
-    if not isinstance(policy.get("min_savings_ratio"), (int, float)) or policy.get("min_savings_ratio") < 0:
+    if not non_negative(policy.get("min_savings_ratio"), (int, float)):
         errors.append("policy.min_savings_ratio must be a non-negative number")
-    if not isinstance(policy.get("min_saved_tokens"), int) or policy.get("min_saved_tokens") < 0:
+    if not non_negative(policy.get("min_saved_tokens"), int):
         errors.append("policy.min_saved_tokens must be a non-negative integer")
     if not isinstance(policy.get("include_candidates"), bool):
         errors.append("policy.include_candidates must be boolean")
     return errors
 
 
-def validate_result(result: dict[str, Any], index: int, check_files: bool) -> list[str]:
-    errors: list[str] = []
-    prefix = f"results[{index}]"
-    require_keys(result, ["source", "source_name", "selected", "decision", "read_path"], prefix, errors)
-
+def validate_result(result: dict[str, Any], prefix: str, check_files: bool) -> list[str]:
+    errors = missing_keys(result, RESULT_KEYS, prefix)
     decision = result.get("decision")
     selected = result.get("selected")
     source = result.get("source")
@@ -133,49 +148,26 @@ def validate_result(result: dict[str, Any], index: int, check_files: bool) -> li
         errors.append(f"{prefix}.read_path must be a non-empty string")
 
     if selected is True:
-        require_keys(
-            result,
-            [
-                "kind",
-                "bytes",
-                "sha256",
-                "raw_tokens",
-                "selected_format",
-                "selected_tokens",
-                "payload_tokens",
-                "instruction_tokens",
-                "saved_tokens",
-                "savings_ratio",
-                "token_counter_label",
-                "output_path",
-                "output_sha256",
-                "notes",
-            ],
-            prefix,
-            errors,
-        )
+        errors += missing_keys(result, SELECTED_KEYS, prefix)
         if not output_path:
             errors.append(f"{prefix}.output_path is required when selected")
         elif read_path != output_path:
             errors.append(f"{prefix}.read_path must equal output_path when selected")
-        errors.extend(validate_token_math(result, prefix))
+        errors += validate_token_math(result, prefix)
     else:
         if output_path is not None:
             errors.append(f"{prefix}.output_path must be null or absent when not selected")
         if isinstance(source, str) and isinstance(read_path, str) and read_path != source:
             errors.append(f"{prefix}.read_path must equal source when not selected")
 
-    label = result.get("token_counter_label")
-    if label is not None and label not in {"exact", "estimated"}:
+    if result.get("token_counter_label") not in {None, "exact", "estimated"}:
         errors.append(f"{prefix}.token_counter_label must be exact or estimated")
-
     if check_files:
-        errors.extend(validate_files(result, prefix))
+        errors += validate_files(result, prefix)
     return errors
 
 
 def validate_token_math(result: dict[str, Any], prefix: str) -> list[str]:
-    errors: list[str] = []
     try:
         raw_tokens = int(result["raw_tokens"])
         selected_tokens = int(result["selected_tokens"])
@@ -184,88 +176,69 @@ def validate_token_math(result: dict[str, Any], prefix: str) -> list[str]:
     except Exception as exc:
         return [f"{prefix} token fields must be numeric: {exc}"]
 
+    errors = []
     if raw_tokens < 0 or selected_tokens < 0:
         errors.append(f"{prefix} token counts must be non-negative")
     if saved_tokens != raw_tokens - selected_tokens:
         errors.append(f"{prefix}.saved_tokens must equal raw_tokens - selected_tokens")
-    expected_ratio = 0.0 if raw_tokens == 0 else 1.0 - (selected_tokens / raw_tokens)
-    if not math.isclose(savings_ratio, expected_ratio, rel_tol=1e-12, abs_tol=1e-12):
+    if not ratio_matches(savings_ratio, raw_tokens, selected_tokens):
         errors.append(f"{prefix}.savings_ratio does not match token counts")
     if selected_tokens > raw_tokens:
         errors.append(f"{prefix}.selected_tokens must not exceed raw_tokens when selected")
     return errors
 
 
-def validate_summary(
-    summary: Any,
-    files: int,
-    selected_files: int,
-    raw_tokens: int,
-    selected_tokens: int,
-) -> list[str]:
-    errors: list[str] = []
-    if not isinstance(summary, dict):
-        return ["report.summary must be an object"]
-    require_keys(summary, ["files", "selected_files", "raw_tokens", "selected_tokens", "saved_tokens", "savings_ratio"], "summary", errors)
-    expected = {
-        "files": files,
-        "selected_files": selected_files,
-        "raw_tokens": raw_tokens,
-        "selected_tokens": selected_tokens,
-        "saved_tokens": raw_tokens - selected_tokens,
-    }
-    for key, value in expected.items():
-        if summary.get(key) != value:
-            errors.append(f"summary.{key} must be {value}")
-    expected_ratio = 0.0 if raw_tokens == 0 else 1.0 - (selected_tokens / raw_tokens)
-    if not math.isclose(float(summary.get("savings_ratio", -1)), expected_ratio, rel_tol=1e-12, abs_tol=1e-12):
-        errors.append("summary.savings_ratio does not match token counts")
-    return errors
-
-
 def validate_files(result: dict[str, Any], prefix: str) -> list[str]:
-    errors: list[str] = []
+    errors = []
     source = Path(str(result.get("source", "")))
     read_path = Path(str(result.get("read_path", "")))
     if not source.is_file():
         errors.append(f"{prefix}.source does not exist")
     if not read_path.is_file():
         errors.append(f"{prefix}.read_path does not exist")
+    if not source.is_file():
+        return errors
     expected_sha = result.get("sha256")
-    if expected_sha and source.is_file() and hook.sha256_file(source) != expected_sha:
+    if expected_sha and hook.sha256_file(source) != expected_sha:
         errors.append(f"{prefix}.sha256 does not match source")
-    if result.get("selected") is True and source.is_file() and read_path.is_file():
-        expected_output_sha = result.get("output_sha256")
-        if not isinstance(expected_output_sha, str) or not expected_output_sha:
-            errors.append(f"{prefix}.output_sha256 must be a non-empty string when selected")
-        elif hook.sha256_file(read_path) != expected_output_sha:
-            errors.append(f"{prefix}.output_sha256 does not match read_path")
-        errors.extend(validate_round_trip(result, source, read_path, prefix))
-    return errors
+    if result.get("selected") is not True or not read_path.is_file():
+        return errors
 
+    output_sha = result.get("output_sha256")
+    if not isinstance(output_sha, str) or not output_sha:
+        errors.append(f"{prefix}.output_sha256 must be a non-empty string when selected")
+    elif hook.sha256_file(read_path) != output_sha:
+        errors.append(f"{prefix}.output_sha256 does not match read_path")
 
-def validate_round_trip(result: dict[str, Any], source_path: Path, read_path: Path, prefix: str) -> list[str]:
     selected_format = result.get("selected_format")
     kind = result.get("kind")
     if not isinstance(selected_format, str) or not selected_format:
-        return [f"{prefix}.selected_format is required for round-trip check"]
+        return errors + [f"{prefix}.selected_format is required for round-trip check"]
     if not isinstance(kind, str) or not kind:
-        return [f"{prefix}.kind is required for round-trip check"]
+        return errors + [f"{prefix}.kind is required for round-trip check"]
     try:
-        source = hook.load_source(source_path)
+        value = hook.load_source(source).value
         sidecar_text = read_path.read_text(encoding="utf-8")
         candidate_text = hook.candidate_text_from_blob(selected_format, sidecar_text)
         decoded = hook.decode_candidate_value(selected_format, candidate_text, kind)
     except Exception as exc:
-        return [f"{prefix}.read_path failed round-trip decode: {exc}"]
-    if decoded != source.value:
-        return [f"{prefix}.read_path does not decode to source value"]
-    return []
+        return errors + [f"{prefix}.read_path failed round-trip decode: {exc}"]
+    if decoded != value:
+        errors.append(f"{prefix}.read_path does not decode to source value")
+    return errors
 
-def require_keys(value: dict[str, Any], keys: list[str], prefix: str, errors: list[str]) -> None:
-    for key in keys:
-        if key not in value:
-            errors.append(f"{prefix}.{key} is required")
+
+def missing_keys(value: dict[str, Any], keys: list[str], prefix: str) -> list[str]:
+    return [f"{prefix}.{key} is required" for key in keys if key not in value]
+
+
+def non_negative(value: Any, types: type | tuple[type, ...]) -> bool:
+    return isinstance(value, types) and value >= 0
+
+
+def ratio_matches(ratio: Any, raw_tokens: int, selected_tokens: int) -> bool:
+    expected = 0.0 if raw_tokens == 0 else 1.0 - (selected_tokens / raw_tokens)
+    return math.isclose(float(ratio), expected, rel_tol=1e-12, abs_tol=1e-12)
 
 
 if __name__ == "__main__":

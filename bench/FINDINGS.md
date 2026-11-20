@@ -143,7 +143,7 @@ included: JSON compact 4.11, TOON 4.52, **ctab 6.18 bits/token**.
 | JSON pretty | 60.7% [54.4, 66.6] | 6,964 | 8.7 | 100.0 | 28.6 | 12.5 | 80.6 |
 | TOON | 66.1% [59.9, 71.8] | 4,154 | 15.9 | 97.8 | 42.9 | 14.6 | 94.4 |
 | codebook-json (original repo, flat sets only, n=133) | 51.9% [43.5, 60.2] | 5,103 | 10.2 | 84.3 | 18.8 | 3.7 | 82.6 |
-| ctab v1 | 60.3% [53.9, 66.2] | 3,474 | 17.3 | 97.8 | 34.9 | 12.5 | 72.2 |
+| ctab v1 (encoder in commit ac1468d, `bench/ctab_v1.py`) | 60.3% [53.9, 66.2] | 3,474 | 17.3 | 97.8 | 34.9 | 12.5 | 72.2 |
 | ctab v2 (seed 12345; v2 was designed from v1's errors on this seed, so not truly held-out) | 61.9% [55.6, 67.8] | 3,503 | 17.7 | 100.0 | 33.3 | 14.6 | 77.8 |
 | schema preview + Bash/python tool, 2 turns (billed: 10,341 input tok/Q, more than TOON's 5,418) | 97.1% [94.1, 98.6] | 232 data / 10,341 billed | 418.7 data-only | 98.9 | 96.8 | 100.0 | 88.9 |
 
@@ -253,7 +253,7 @@ v1 → v2 changes, from the official-seed v1 error analysis:
 ## 6. Reproduce
 
 ```sh
-pip install tiktoken scipy
+pip install tiktoken
 git clone https://github.com/toon-format/toon ../toon-repo
 (cd ../toon-repo && npx pnpm install --filter "@toon/benchmarks...")
 # make all three faker seeds configurable (12345 / 67890 / 67891 are unchanged at BENCH_SEED=12345)

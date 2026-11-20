@@ -19,12 +19,13 @@ def register(ctx: Any) -> None:
         return
 
     def optimized_read_file(args: dict[str, Any], **kwargs: Any) -> str:
-        replacement = _selected_read_path(args, kwargs.get("task_id") or "default")
+        try:
+            replacement = _selected_read_path(args, kwargs.get("task_id") or "default")
+        except Exception:
+            replacement = None
         if replacement is None:
             return original.handler(args, **kwargs)
-        rewritten = dict(args)
-        rewritten["path"] = replacement
-        return original.handler(rewritten, **kwargs)
+        return original.handler({**args, "path": replacement}, **kwargs)
 
     ctx.register_tool(
         name="read_file",
@@ -40,49 +41,23 @@ def register(ctx: Any) -> None:
 
 
 def _selected_read_path(args: dict[str, Any], task_id: str) -> str | None:
+    """Return a verified sidecar path for a whole-file structured read, else None."""
     path = args.get("path")
-    if not isinstance(path, str):
+    repo_root = os.environ.get("CONTEXT_SELECTOR_REPO_ROOT")
+    if not isinstance(path, str) or not repo_root:
         return None
     if "offset" in args or "limit" in args:
         return None
     if Path(path).suffix.lower() not in SUPPORTED_SUFFIXES:
         return None
-
-    repo_root = os.environ.get("CONTEXT_SELECTOR_REPO_ROOT")
-    if not repo_root:
-        return None
     repo = Path(repo_root).expanduser().resolve()
     if not (repo / "selector.py").is_file():
         return None
 
-    try:
-        source_path = _resolve_hermes_path(path, task_id)
-        selected = _run_selector(repo, source_path)
-        if selected is None:
-            return None
-        if _line_count(selected) > 500:
-            return None
-        return str(selected)
-    except Exception:
-        return None
+    from tools.file_tools import _resolve_path_for_task
 
-
-def _resolve_hermes_path(path: str, task_id: str) -> Path:
-    try:
-        from tools.file_tools import _resolve_path_for_task
-
-        return Path(_resolve_path_for_task(path, task_id)).resolve()
-    except Exception:
-        raw = Path(path).expanduser()
-        if raw.is_absolute():
-            return raw.resolve()
-        base = Path(os.environ.get("TERMINAL_CWD") or os.getcwd())
-        return (base / raw).resolve()
-
-
-def _run_selector(repo: Path, source_path: Path) -> Path | None:
+    source_path = Path(_resolve_path_for_task(path, task_id)).resolve()
     with tempfile.TemporaryDirectory(prefix="context-selector-hermes-hook-") as tmp:
-        report_out = Path(tmp) / "selector-report.json"
         proc = subprocess.run(
             [
                 "python3",
@@ -94,7 +69,7 @@ def _run_selector(repo: Path, source_path: Path) -> Path | None:
                 "--model",
                 os.environ.get("CONTEXT_SELECTOR_MODEL", "unknown"),
                 "--report-out",
-                str(report_out),
+                str(Path(tmp) / "selector-report.json"),
                 "--verify-report",
                 str(source_path),
             ],
@@ -103,19 +78,10 @@ def _run_selector(repo: Path, source_path: Path) -> Path | None:
             capture_output=True,
             check=True,
         )
-        report = json.loads(proc.stdout)
-        results = report.get("results")
-        if not isinstance(results, list) or len(results) != 1:
+    (result,) = json.loads(proc.stdout)["results"]
+    if not result["selected"]:
+        return None
+    with open(result["read_path"], encoding="utf-8", errors="replace") as handle:
+        if sum(1 for _ in handle) > 500:
             return None
-        result = results[0]
-        if not isinstance(result, dict) or not result.get("selected"):
-            return None
-        read_path = result.get("read_path")
-        if not isinstance(read_path, str):
-            return None
-        return Path(read_path)
-
-
-def _line_count(path: Path) -> int:
-    with path.open("r", encoding="utf-8", errors="replace") as handle:
-        return sum(1 for _ in handle)
+    return result["read_path"]

@@ -19,8 +19,7 @@ SUPPORTED_SUFFIXES = {".json", ".jsonl", ".csv", ".tsv"}
 
 def main() -> int:
     try:
-        payload = json.load(sys.stdin)
-        output = handle(payload)
+        output = handle(json.load(sys.stdin))
     except Exception as exc:
         print(f"context selector hook failed open: {exc}", file=sys.stderr)
         return 0
@@ -32,58 +31,57 @@ def main() -> int:
 def handle(payload: dict[str, Any]) -> dict[str, Any] | None:
     if payload.get("hook_event_name") != "PreToolUse":
         return None
+    configured = os.environ.get("CONTEXT_SELECTOR_REPO_ROOT")
+    if configured:
+        repo = Path(configured).expanduser().resolve()
+    else:
+        repo = Path(__file__).resolve().parents[2]
+    if not (repo / "selector.py").is_file():
+        return None
+    cwd = payload.get("cwd") or os.environ.get("PWD") or os.getcwd()
+    cwd = Path(str(cwd)).expanduser().resolve()
+    model = str(payload.get("model") or os.environ.get("CONTEXT_SELECTOR_MODEL") or "unknown")
     tool_name = payload.get("tool_name")
     tool_input = payload.get("tool_input")
-    if not isinstance(tool_name, str) or not isinstance(tool_input, dict):
-        return None
-
-    cwd = Path(str(payload.get("cwd") or os.environ.get("PWD") or os.getcwd())).expanduser().resolve()
-    model = str(payload.get("model") or os.environ.get("CONTEXT_SELECTOR_MODEL") or "unknown")
-    repo = resolve_repo_root()
-    if repo is None:
-        return None
 
     if tool_name == "Read":
         file_path = tool_input.get("file_path")
-        if not isinstance(file_path, str) or tool_input.get("offset") is not None or tool_input.get("limit") is not None:
-            return None
-        if not supported(file_path):
+        if (
+            not isinstance(file_path, str)
+            or tool_input.get("offset") is not None
+            or tool_input.get("limit") is not None
+            or not supported(file_path)
+        ):
             return None
         replacement = selected_read_paths(repo, cwd, model, [file_path], "claude-code-read-hook")
-        if len(replacement) != 1:
+        if not replacement:
             return None
-        updated = dict(tool_input)
-        updated["file_path"] = replacement[0]
-        return pretool_output(updated, "allow")
+        return pretool_output({**tool_input, "file_path": replacement[0]}, "allow")
 
     if tool_name == "Bash":
         command = tool_input.get("command")
-        if not isinstance(command, str):
-            return None
-        paths = plain_cat_paths(command)
+        paths = plain_cat_paths(command) if isinstance(command, str) else []
         if not paths or not all(supported(path) for path in paths):
             return None
         replacement = selected_read_paths(repo, cwd, model, paths, "claude-code-bash-hook")
-        if len(replacement) != len(paths):
+        if not replacement:
             return None
-        updated = dict(tool_input)
-        updated["command"] = "cat -- " + " ".join(shell_quote(path) for path in replacement)
-        return pretool_output(updated, "ask")
+        command = "cat -- " + " ".join(shell_quote(path) for path in replacement)
+        return pretool_output({**tool_input, "command": command}, "ask")
 
     return None
 
 
-def resolve_repo_root() -> Path | None:
-    configured = os.environ.get("CONTEXT_SELECTOR_REPO_ROOT")
-    repo = Path(configured).expanduser().resolve() if configured else Path(__file__).resolve().parents[2]
-    return repo if (repo / "selector.py").is_file() else None
-
-
-def selected_read_paths(repo: Path, cwd: Path, model: str, paths: list[str], adapter: str) -> list[str]:
+def selected_read_paths(
+    repo: Path, cwd: Path, model: str, paths: list[str], adapter: str
+) -> list[str]:
+    """Return verified sidecar paths for every input, or [] when any is not selected."""
     report_dir = cwd / ".codex" / "context-cache" / "reports"
     report_dir.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(prefix=f"{adapter}.", suffix=".json", dir=report_dir, delete=False) as handle:
-        report_out = Path(handle.name)
+    with tempfile.NamedTemporaryFile(
+        prefix=f"{adapter}.", suffix=".json", dir=report_dir, delete=False
+    ) as handle:
+        report_out = handle.name
     try:
         proc = subprocess.run(
             [
@@ -96,7 +94,7 @@ def selected_read_paths(repo: Path, cwd: Path, model: str, paths: list[str], ada
                 "--model",
                 model,
                 "--report-out",
-                str(report_out),
+                report_out,
                 "--verify-report",
                 *paths,
             ],
@@ -105,16 +103,13 @@ def selected_read_paths(repo: Path, cwd: Path, model: str, paths: list[str], ada
             capture_output=True,
             check=True,
         )
-        report = json.loads(proc.stdout)
-        results = report.get("results")
-        if not isinstance(results, list) or len(results) != len(paths):
-            return []
-        if not all(isinstance(result, dict) and result.get("selected") and result.get("read_path") for result in results):
-            return []
-        return [str(result["read_path"]) for result in results]
-    except Exception as exc:
+    except subprocess.CalledProcessError as exc:
         print(f"context selector hook no-op: {exc}", file=sys.stderr)
         return []
+    results = json.loads(proc.stdout)["results"]
+    if len(results) != len(paths) or not all(result["selected"] for result in results):
+        return []
+    return [result["read_path"] for result in results]
 
 
 def supported(path: str) -> bool:
@@ -128,7 +123,7 @@ def plain_cat_paths(command: str) -> list[str]:
         parts = shlex.split(command)
     except ValueError:
         return []
-    if not parts or parts[0] != "cat":
+    if parts[:1] != ["cat"]:
         return []
     paths = parts[1:]
     if paths[:1] == ["--"]:
@@ -139,7 +134,9 @@ def plain_cat_paths(command: str) -> list[str]:
 
 
 def shell_quote(value: str) -> str:
-    return value if Path(value).is_absolute() and re.fullmatch(r"[A-Za-z0-9_./:-]+", value) else shlex.quote(value)
+    if Path(value).is_absolute() and re.fullmatch(r"[A-Za-z0-9_./:-]+", value):
+        return value
+    return shlex.quote(value)
 
 
 def pretool_output(updated_input: dict[str, Any], decision: str) -> dict[str, Any]:

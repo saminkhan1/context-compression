@@ -26,5 +26,6 @@ For publication-facing claims, first verify the source coverage and row scale:
 .venv/bin/python benchmark.py verify-corpus --corpus data/benchmark-corpus
 ```
 
-The current evidence report generated from this corpus is
-[`../reports/benchmark-report.md`](../reports/benchmark-report.md).
+`benchmark.py run`/`all` write the token report to
+`reports/benchmark-report.{json,md}` by default (generated output, not checked
+in; override with `--json-out`/`--markdown-out`).

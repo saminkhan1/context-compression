@@ -18,50 +18,44 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+CODEX_ROOT = Path.home() / "Documents/Codex/2026-05-20/i-have-an-idea-so-when/codex-src"
+
+
 def main() -> int:
+    claude = shutil.which("claude")
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--codex-root", type=Path, default=detect_codex_root())
-    parser.add_argument("--hermes-root", type=Path, default=Path.home() / ".hermes" / "hermes-agent")
-    parser.add_argument("--openclaw-root", type=Path, default=Path("/tmp/context-compression-upstream-openclaw"))
-    parser.add_argument("--claude-bin", type=Path, default=detect_executable("claude"))
+    parser.add_argument(
+        "--codex-root",
+        type=Path,
+        default=CODEX_ROOT if (CODEX_ROOT / "codex-rs").is_dir() else None,
+    )
+    parser.add_argument(
+        "--hermes-root", type=Path, default=Path.home() / ".hermes" / "hermes-agent"
+    )
+    parser.add_argument(
+        "--openclaw-root", type=Path, default=Path("/tmp/context-compression-upstream-openclaw")
+    )
+    parser.add_argument(
+        "--claude-bin", type=Path, default=Path(claude).resolve() if claude else None
+    )
     args = parser.parse_args()
 
-    errors: list[str] = []
-    checks = [
-        ("codex", check_codex(args.codex_root)),
-        ("claude-code", check_claude_code(args.claude_bin)),
-        ("hermes-agent", check_hermes(args.hermes_root)),
-        ("openclaw", check_openclaw(args.openclaw_root)),
+    errors = [
+        f"{harness}: {error}"
+        for harness, harness_errors in [
+            ("codex", check_codex(args.codex_root)),
+            ("claude-code", check_claude_code(args.claude_bin)),
+            ("hermes-agent", check_hermes(args.hermes_root)),
+            ("openclaw", check_openclaw(args.openclaw_root)),
+        ]
+        for error in harness_errors
     ]
-    for harness, harness_errors in checks:
-        errors.extend(f"{harness}: {error}" for error in harness_errors)
-
+    for error in errors:
+        print(error, file=sys.stderr)
     if errors:
-        for error in errors:
-            print(error, file=sys.stderr)
         return 1
     print("harness source contracts ok")
     return 0
-
-
-def detect_codex_root() -> Path | None:
-    candidates = [
-        Path.home()
-        / "Documents"
-        / "Codex"
-        / "2026-05-20"
-        / "i-have-an-idea-so-when"
-        / "codex-src",
-    ]
-    for candidate in candidates:
-        if (candidate / "codex-rs").is_dir():
-            return candidate
-    return None
-
-
-def detect_executable(name: str) -> Path | None:
-    found = shutil.which(name)
-    return Path(found).resolve() if found else None
 
 
 def check_codex(root: Path | None) -> list[str]:
@@ -93,17 +87,13 @@ def check_codex(root: Path | None) -> list[str]:
 def check_claude_code(binary: Path | None) -> list[str]:
     if binary is None or not binary.exists():
         return ["missing installed claude binary; pass --claude-bin /path/to/claude"]
-    target = binary.resolve()
-    try:
-        output = subprocess.run(
-            ["strings", str(target)],
-            text=True,
-            capture_output=True,
-            check=True,
-            timeout=30,
-        ).stdout
-    except Exception as exc:
-        return [f"could not inspect {target}: {exc}"]
+    output = subprocess.run(
+        ["strings", str(binary.resolve())],
+        text=True,
+        capture_output=True,
+        check=True,
+        timeout=30,
+    ).stdout
     return require_text(
         output,
         [
@@ -184,13 +174,14 @@ def check_openclaw(root: Path | None) -> list[str]:
 
 
 def require_files(root: Path, checks: dict[str, list[str]]) -> list[str]:
-    errors: list[str] = []
+    errors = []
     for relative, needles in checks.items():
         path = root / relative
         if not path.is_file():
             errors.append(f"missing {relative}")
             continue
-        errors.extend(f"{relative} missing {error}" for error in require_text(path.read_text(encoding="utf-8", errors="replace"), needles))
+        text = path.read_text(encoding="utf-8", errors="replace")
+        errors += [f"{relative} missing {error}" for error in require_text(text, needles)]
     return errors
 
 

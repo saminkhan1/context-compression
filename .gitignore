@@ -2,13 +2,7 @@
 .venv/
 logs/
 data/benchmark-corpus/
-reports/generated-baselines/
-.researchclaw_cache/
-artifacts/
-docs/kb/
-feedback/local/
-
-evals/context-quality.generated.jsonl
+reports/
 
 __pycache__/
 *.py[cod]
