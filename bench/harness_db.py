@@ -31,7 +31,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 import harness as H  # noqa: E402
 
-IN_CONTEXT_MAX_TOKENS = 30_000
+IN_CONTEXT_MAX_TOKENS = 10_000
 FORMAT_RULES = """Answer format (the answer type is {type}):
 - boolean: True or False
 - number: a plain number

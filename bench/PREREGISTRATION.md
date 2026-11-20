@@ -127,3 +127,10 @@ Frozen immediately before the first confirmatory run (sha256 prefixes):
    seeds: 51,702 / 51,474 / 51,380 tokens per question). The token half of H1 is therefore reported from
    this estimate, labelled as estimated; the accuracy half rests on dev seed 777 plus the three fresh
    small-regime in-context runs.
+4. **Three in-context tests restored (2026-11-20, user decision, before any of them ran).** Because the
+   cuts in item 2 left gaps, the following are added back to the confirmatory study: in-context `toon` on
+   large seed 9001 (all 239 questions), `toon-think` on small seed 9001, and the DataBench in-context `table`
+   arm. To save tokens the DataBench `table` eligibility cutoff is lowered from 30,000 to 10,000 tokens
+   (size alone, 6 test tables, 166 questions), so that arm's claim is scoped to small real tables. Item 3's
+   offline estimate stays as a cross-check on the measured large-seed run. harness_db.py changed (cutoff
+   constant only). Items 1-2's other cuts stand (no repeats, no ctab2, no native-tool arm).
