@@ -106,3 +106,33 @@ A=code-namesonly  B=code  paired n=1434  clusters=48
 isCorrect         acc diff A-B  +0.1pp  cluster95% [-0.5,+0.7]  sign-flip p=0.4446  (question-level McNemar 9/7 p=0.804, anti-conservative)  non-inferior@3pp (one-sided 95% lower -0.4): True
 B/A raw tokens       1.13x  cluster95% [1.10, 1.16]
 B/A $ ideal-cache    1.10x  cluster95% [1.08, 1.13]
+##### JSON baselines (exploratory, small seed 9001, thinking off)
+agent              n=239   strict  97.1% [94.1,98.6]  lenient  97.1%  tok/Q    3,276  $/1kQ flat   4.01 cached   2.37  turns 2.3
+toon               n=239   strict  63.6% [57.3,69.4]  lenient  64.0%  tok/Q    5,385  $/1kQ flat   5.42 cached   5.42  turns 1.0
+toon-think         n=239   strict  95.0% [91.4,97.1]  lenient  95.0%  tok/Q    6,346  $/1kQ flat  10.11 cached  10.11  turns 1.0
+json-pretty        n=239   strict  61.9% [55.6,67.8]  lenient  61.9%  tok/Q    9,026  $/1kQ flat   9.05 cached   9.05  turns 1.0
+json-compact       n=239   strict  59.8% [53.5,65.8]  lenient  59.8%  tok/Q    6,128  $/1kQ flat   6.16 cached   6.16  turns 1.0
+
+##### agent vs json-pretty
+A=agent  B=json-pretty  paired n=239  clusters=8
+isCorrect         acc diff A-B +34.9pp  cluster95% [+21.7,+45.1]  sign-flip p=0.0157  (question-level McNemar 86/2 p=2.53e-23, anti-conservative)  non-inferior@3pp (one-sided 95% lower +24.4): True
+B/A raw tokens       2.72x  cluster95% [1.59, 3.75]
+B/A $ ideal-cache    3.78x  cluster95% [2.18, 5.29]
+
+##### agent vs json-compact
+A=agent  B=json-compact  paired n=239  clusters=8
+isCorrect         acc diff A-B +37.0pp  cluster95% [+23.7,+47.2]  sign-flip p=0.0157  (question-level McNemar 91/2 p=8.83e-25, anti-conservative)  non-inferior@3pp (one-sided 95% lower +26.3): True
+B/A raw tokens       1.85x  cluster95% [1.08, 2.63]
+B/A $ ideal-cache    2.57x  cluster95% [1.48, 3.67]
+
+##### toon vs json-pretty
+A=toon  B=json-pretty  paired n=239  clusters=8
+isCorrect         acc diff A-B  +1.8pp  cluster95% [-1.9,+4.9]  sign-flip p=0.1720  (question-level McNemar 11/7 p=0.481, anti-conservative)  non-inferior@3pp (one-sided 95% lower -1.4): True
+B/A raw tokens       1.68x  cluster95% [1.45, 1.97]
+B/A $ ideal-cache    1.68x  cluster95% [1.44, 1.96]
+
+##### toon vs json-compact
+A=toon  B=json-compact  paired n=239  clusters=8
+isCorrect         acc diff A-B  +3.9pp  cluster95% [+0.7,+7.5]  sign-flip p=0.0615  (question-level McNemar 15/6 p=0.0784, anti-conservative)  non-inferior@3pp (one-sided 95% lower +1.1): True
+B/A raw tokens       1.14x  cluster95% [0.97, 1.34]
+B/A $ ideal-cache    1.14x  cluster95% [0.97, 1.33]

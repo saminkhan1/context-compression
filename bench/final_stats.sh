@@ -21,3 +21,8 @@ cmp "secondary six sets: code vs agent-nopreview" code agent-nopreview "${S6[@]}
 cmp "secondary DataBench: code vs agent" code agent databench-test
 cmp "secondary DataBench: code vs agent-nopreview" code agent-nopreview databench-test
 cmp "ablation six sets: code-namesonly vs code" code-namesonly code "${S6[@]}"
+echo "##### JSON baselines (exploratory, small seed 9001, thinking off)"; $PY study_stats.py --table agent toon toon-think json-pretty json-compact --sets small-9001
+cmp "agent vs json-pretty" agent json-pretty small-9001
+cmp "agent vs json-compact" agent json-compact small-9001
+cmp "toon vs json-pretty" toon json-pretty small-9001
+cmp "toon vs json-compact" toon json-compact small-9001

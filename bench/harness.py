@@ -227,7 +227,7 @@ def run_arm(arm: str, q: dict, ds: dict, formats: dict) -> dict | None:
     think = arm.endswith("-think")
     base = arm.removesuffix("-think")
     with tempfile.TemporaryDirectory() as tmp:
-        if base in ("toon", "json-pretty", "ctab2"):
+        if base in ("toon", "json-pretty", "json-compact", "ctab2"):
             if base == "ctab2":
                 text = ctab.encode(data)
                 prompt = legacy.inline_prompt(ctab.PRIMER, "ctab", "text", text, question)

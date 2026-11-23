@@ -39,8 +39,9 @@ fuller preview (+0.1 pp, 12% fewer tokens).
 | ≤100-row files, thinking off (n = 717) | 97.6% | 64.6% | 1.7x fewer tokens |
 | ≤100-row files, **thinking on** (n = 239) | 97.1% at 3,276 | 95.0% at 6,346 | accuracy gap not detectable (+2.1 pp [-1.8, +6.9]) |
 | Small real tables ≤10k tokens (n = 166) | 88.0% | 52.4% | same token cost |
+| ≤100-row files, thinking off, **vs JSON** (n = 239, seed 9001) | 97.1% at 3,276 | pretty JSON 61.9% at 9,026; compact JSON 59.8% at 6,128 | 2.7x / 1.9x fewer tokens; TOON (63.6% at 5,385) is not distinguishably more accurate than pretty JSON |
 
-Thinking-on reading was not tested on large files, so the large-file accuracy gap is against thinking-off reading.
+Reading the large files as JSON would cost an estimated 87k (pretty) or 57k (compact) tokens per question against TOON's 52k and the agent's 3k (offline estimate; JSON accuracy was measured on small files only). Thinking-on reading was not tested on large files, so the large-file accuracy gap is against thinking-off reading.
 
 **Not robust: one-shot code.** A single script with no repair step matches the agent on the synthetic sets (98.0% at
 1,242 tok/Q) but loses 7.5 pp on DataBench (79.3% vs 86.8%), where scripts crash on column names.

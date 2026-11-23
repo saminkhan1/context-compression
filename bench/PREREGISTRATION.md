@@ -161,3 +161,17 @@ names-only vs full preview, +0.1 pp [-0.5, +0.7], 12% fewer tokens, so the sampl
 95.0% vs 63.6% with thinking off (+31.0 pp). The agent is not detectably better than thinking-on reading
 (97.1% vs 95.0%, +2.1 pp [-1.8, +6.9]) and uses 1.9x fewer tokens. The large "agent vs reading" accuracy gap is
 therefore measured against thinking-off reading; **thinking-on reading was not tested on large files**.
+6. **JSON baselines added at the user's request (2026-11-23, exploratory, not pre-registered).** In-context
+   `json-pretty` and `json-compact` (thinking off) on small seed 9001 only, to compare with the most common
+   data format. Large-regime JSON accuracy is not run (a full pass would cost about 17M+ tokens for compact and
+   about 21M for pretty JSON, and the largest pretty file is an estimated 192k tokens, at the edge of the 200k
+   window); large-regime JSON sizes are reported from offline tokenisation instead, scaled by the per-dataset
+   Claude/o200k ratio measured on TOON prompts (an approximation for JSON). Estimated reading cost per question on
+   large seed 9001: json-pretty 87,386, json-compact 57,047, toon 51,745.
+
+**JSON baselines (exploratory, small seed 9001, thinking off, n = 239, 8 clusters).** JSON pretty 61.9% at 9,026
+tokens/Q; JSON compact 59.8% at 6,128; TOON 63.6% at 5,385; agent with preview 97.1% at 3,276. Agent vs JSON
+pretty: +34.9 pp [+21.7, +45.1], 2.7x fewer tokens [1.6, 3.8]; vs JSON compact: +37.0 pp [+23.7, +47.2], 1.85x fewer
+[1.08, 2.63]. TOON vs JSON pretty: +1.8 pp [-1.9, +4.9] (not distinguishable), 1.68x fewer tokens; TOON vs JSON compact:
++3.9 pp [+0.7, +7.5] (sign-flip p = 0.06). Thinking-on JSON was not tested. harness.py gained `json-compact` as an
+in-context arm for this (no other change).
