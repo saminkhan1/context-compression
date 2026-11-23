@@ -14,29 +14,45 @@ its answers. Two tools, one rule: **inline small data losslessly, query large da
 
 ## Evidence
 
-Measured on the official
-[TOON retrieval benchmark](https://github.com/toon-format/toon/tree/main/benchmarks)
-(its datasets, questions and deterministic grader), using claude-haiku-4-5. The method,
-caveats and raw per-question results are in [`bench/FINDINGS.md`](bench/FINDINGS.md).
+Everything here is claude-haiku-4-5 only, measured on the official
+[TOON retrieval benchmark](https://github.com/toon-format/toon/tree/main/benchmarks) (fresh seeds 9001-9003) and on
+[DataBench](https://huggingface.co/datasets/cardiffnlp/databench) (70 real tables, 1,613 questions, official comparator).
+The study was [pre-registered](bench/PREREGISTRATION.md) before the confirmatory runs; raw per-question results,
+transcripts and `bench/final_stats.sh` are in [`bench/results2/`](bench/results2/). Intervals are 95% cluster
+bootstraps over datasets.
 
-**Query large data.** This is system-level: the model writes code against the file
-instead of reading the rows. Results are on a fresh, untuned seed, counting all billed
-tokens (input, output, all turns, overhead):
+**Give the agent a schema preview.** A ~150-token description of the file (names, types, row count) before it runs code:
 
-| Regime | Code from schema preview | Baseline | Fewer billed tokens |
+| Where | Accuracy with preview | Without | Tokens per question, with vs without |
 | --- | --- | --- | --- |
-| 100–2,000 rows | **98.3%** at 1,236 tok/Q | plain Bash agent, no preview: 95.0% at 18,981 | **15.4×** |
-| 100–2,000 rows | **98.3%** at 1,236 tok/Q | TOON in context: 61.5% at 51,631 | **41.8×** |
-| ≤100 rows | **97.5%** at 1,230 tok/Q | TOON in context: 64.9% at 5,410 | 4.4× |
+| Six synthetic benchmark sets (n = 1,434) | 97.6% | 96.4% (+1.1 pp [+0.2, +2.1]) | 3,150 vs 6,156: **1.9x fewer** |
+| DataBench, real tables (n = 1,613) | **86.8%** | 81.0% (+5.8 pp [+4.0, +7.5]) | 7,096 vs 7,037: no saving |
 
-All 239 questions were run for every arm in the large regime. An earlier version of this table used 32-question samples for the baselines; those were too small and are replaced. Five of the plain agent's 12 misses were chatty answers the grader rejects, so a stricter prompt would likely narrow its accuracy gap. The comparison is one seed, one model.
+So the preview saves tokens on synthetic files and raises accuracy on real tables. Names alone work as well as the
+fuller preview (+0.1 pp, 12% fewer tokens).
 
-The gain scales with size: about 1× on a 6-record config, 2–8× under 100 records, and
-11–139× from 500 to 2,000 records. The questions are templated lookups and aggregations,
-and only one model was tested.
+**Don't read big files into context.** Reading cost grows with file size; an agent's does not.
 
-**Inline small data losslessly.** Token totals on TOON's token-efficiency datasets
-(o200k_base, primer and view header included):
+| Setting | Agent (code) | Reading in context | Note |
+| --- | --- | --- | --- |
+| 2,000-row-class files, thinking off | 97.5% at 3,047 tok/Q | 61.9% at 51,754 | **17x fewer tokens** (interval 5-31x; depends on size) |
+| ≤100-row files, thinking off (n = 717) | 97.6% | 64.6% | 1.7x fewer tokens |
+| ≤100-row files, **thinking on** (n = 239) | 97.1% at 3,276 | 95.0% at 6,346 | accuracy gap not detectable (+2.1 pp [-1.8, +6.9]) |
+| Small real tables ≤10k tokens (n = 166) | 88.0% | 52.4% | same token cost |
+
+Thinking-on reading was not tested on large files, so the large-file accuracy gap is against thinking-off reading.
+
+**Not robust: one-shot code.** A single script with no repair step matches the agent on the synthetic sets (98.0% at
+1,242 tok/Q) but loses 7.5 pp on DataBench (79.3% vs 86.8%), where scripts crash on column names.
+
+**What is not claimed.** The idea of answering table questions with code is established (PAL, DataBench entries).
+Other models, wall-clock time and production savings were not tested; the synthetic questions are templated and favour
+code. An earlier version of this README claimed 14.8x and 41.8x: those compared against an agent carrying Claude Code's
+Bash tool schema and against thinking-off reading, and used 32-question baselines. They are withdrawn
+(see [`bench/FINDINGS.md`](bench/FINDINGS.md)).
+
+**Inline small data losslessly.** Token totals on TOON's token-efficiency datasets (o200k_base, primer and view header
+included); accuracy at seed 12345 is from the earlier development study:
 
 | Encoding | Tokens | vs TOON | Accuracy (seed 12345) |
 | --- | ---: | ---: | ---: |
@@ -45,15 +61,12 @@ and only one model was tested.
 | TOON | 334,046 | – | 66.1% |
 | selector, `advanced` tier (`ctab` wins 7/8 datasets) | **246,038** | **−26.3%** | 61.9% |
 
-`ctab` matches JSON's accuracy at half the tokens. It trails TOON slightly on accuracy
-(p = 0.04).
+`ctab` matches JSON's accuracy at half the tokens and trails TOON slightly (p = 0.04), with thinking off.
 
 **Lessons built into the defaults:**
 
-- Lossless is not answer-preserving: the former `codebook-json` candidate scored 51.9%,
-  so it is experimental-only.
-- Every sidecar now states the file's on-disk format. Without that label, an agent shown
-  a re-encoded view wrote code for the wrong file shape.
+- Lossless is not answer-preserving: the former `codebook-json` candidate scored 51.9%, so it is experimental-only.
+- Every sidecar states the file's on-disk format. Without that label, an agent shown a re-encoded view wrote code for the wrong shape.
 
 ## Quick Start
 

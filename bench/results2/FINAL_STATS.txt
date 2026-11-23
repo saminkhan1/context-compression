@@ -1,0 +1,108 @@
+##### TABLE six TOON sets (3 seeds x 2 regimes)
+agent              n=1434  strict  97.6% [96.6,98.2]  lenient  97.6%  tok/Q    3,150  $/1kQ flat   3.85 cached   2.31  turns 2.2
+agent-nopreview    n=1434  strict  96.4% [95.4,97.3]  lenient  96.4%  tok/Q    6,156  $/1kQ flat   7.96 cached   4.36  turns 3.4
+code               n=1434  strict  98.0% [97.1,98.6]  lenient  98.0%  tok/Q    1,242  $/1kQ flat   1.52 cached   1.52  turns 1.0
+code-namesonly     n=1434  strict  98.1% [97.3,98.7]  lenient  98.1%  tok/Q    1,099  $/1kQ flat   1.38 cached   1.38  turns 1.0
+##### TABLE large regime
+agent              n=717   strict  97.5% [96.1,98.4]  lenient  97.5%  tok/Q    3,086  $/1kQ flat   3.78 cached   2.28  turns 2.2
+agent-nopreview    n=717   strict  95.5% [93.8,96.8]  lenient  95.5%  tok/Q    6,299  $/1kQ flat   8.14 cached   4.44  turns 3.4
+code               n=717   strict  98.3% [97.1,99.0]  lenient  98.3%  tok/Q    1,246  $/1kQ flat   1.53 cached   1.53  turns 1.0
+code-namesonly     n=717   strict  97.8% [96.4,98.6]  lenient  97.8%  tok/Q    1,114  $/1kQ flat   1.39 cached   1.39  turns 1.0
+##### TABLE small regime
+agent              n=717   strict  97.6% [96.2,98.5]  lenient  97.6%  tok/Q    3,215  $/1kQ flat   3.93 cached   2.34  turns 2.3
+agent-nopreview    n=717   strict  97.4% [95.9,98.3]  lenient  97.4%  tok/Q    6,012  $/1kQ flat   7.78 cached   4.29  turns 3.3
+code               n=717   strict  97.6% [96.2,98.5]  lenient  97.6%  tok/Q    1,238  $/1kQ flat   1.51 cached   1.51  turns 1.0
+code-namesonly     n=717   strict  98.5% [97.3,99.1]  lenient  98.5%  tok/Q    1,085  $/1kQ flat   1.36 cached   1.36  turns 1.0
+toon               n=717   strict  64.6% [61.0,68.0]  lenient  64.9%  tok/Q    5,400  $/1kQ flat   5.43 cached   5.43  turns 1.0
+##### TABLE large-9001
+agent              n=239   strict  97.5% [94.6,98.8]  lenient  97.5%  tok/Q    3,047  $/1kQ flat   3.74 cached   2.28  turns 2.2
+agent-nopreview    n=239   strict  96.7% [93.5,98.3]  lenient  96.7%  tok/Q    6,319  $/1kQ flat   8.23 cached   4.51  turns 3.4
+code               n=239   strict  98.7% [96.4,99.6]  lenient  98.7%  tok/Q    1,234  $/1kQ flat   1.51 cached   1.51  turns 1.0
+toon               n=239   strict  61.9% [55.6,67.8]  lenient  62.3%  tok/Q   51,754  $/1kQ flat  51.91 cached  51.91  turns 1.0
+##### TABLE small-9001
+agent              n=239   strict  97.1% [94.1,98.6]  lenient  97.1%  tok/Q    3,276  $/1kQ flat   4.01 cached   2.37  turns 2.3
+toon               n=239   strict  63.6% [57.3,69.4]  lenient  64.0%  tok/Q    5,385  $/1kQ flat   5.42 cached   5.42  turns 1.0
+toon-think         n=239   strict  95.0% [91.4,97.1]  lenient  95.0%  tok/Q    6,346  $/1kQ flat  10.11 cached  10.11  turns 1.0
+##### TABLE DataBench test
+agent              n=1613  strict  86.8% [85.1,88.4]  lenient  86.8%  tok/Q    7,096  $/1kQ flat   8.91 cached   4.75  turns 3.0
+agent-nopreview    n=1613  strict  81.0% [79.0,82.9]  lenient  81.0%  tok/Q    7,037  $/1kQ flat   9.88 cached   5.63  turns 3.6
+code               n=1613  strict  79.3% [77.2,81.2]  lenient  79.3%  tok/Q    1,740  $/1kQ flat   2.06 cached   2.06  turns 1.0
+table              n=166   strict  52.4% [44.8,59.9]  lenient  52.4%  tok/Q    5,791  $/1kQ flat   6.11 cached   6.11  turns 1.0
+
+##### H2/H3 six sets: agent vs agent-nopreview
+A=agent  B=agent-nopreview  paired n=1434  clusters=48
+isCorrect         acc diff A-B  +1.1pp  cluster95% [+0.2,+2.1]  sign-flip p=0.0892  (question-level McNemar 31/15 p=0.0259, anti-conservative)  non-inferior@3pp (one-sided 95% lower +0.3): True
+B/A raw tokens       1.96x  cluster95% [1.86, 2.05]
+B/A $ ideal-cache    1.89x  cluster95% [1.81, 1.96]
+
+##### large regime: agent vs agent-nopreview
+A=agent  B=agent-nopreview  paired n=717  clusters=24
+isCorrect         acc diff A-B  +1.9pp  cluster95% [+0.6,+3.4]  sign-flip p=0.0228  (question-level McNemar 22/8 p=0.0161, anti-conservative)  non-inferior@3pp (one-sided 95% lower +0.8): True
+B/A raw tokens       2.05x  cluster95% [1.92, 2.18]
+B/A $ ideal-cache    1.95x  cluster95% [1.85, 2.05]
+
+##### small regime: agent vs agent-nopreview
+A=agent  B=agent-nopreview  paired n=717  clusters=24
+isCorrect         acc diff A-B  +0.3pp  cluster95% [-0.8,+1.5]  sign-flip p=0.9981  (question-level McNemar 9/7 p=0.804, anti-conservative)  non-inferior@3pp (one-sided 95% lower -0.7): True
+B/A raw tokens       1.87x  cluster95% [1.75, 2.01]
+B/A $ ideal-cache    1.83x  cluster95% [1.73, 1.94]
+
+##### H4 DataBench: agent vs agent-nopreview
+A=agent  B=agent-nopreview  paired n=1613  clusters=70
+isCorrect         acc diff A-B  +5.8pp  cluster95% [+4.0,+7.5]  sign-flip p=0.0000  (question-level McNemar 142/49 p=1.09e-11, anti-conservative)  non-inferior@3pp (one-sided 95% lower +4.3): True
+B/A raw tokens       1.00x  cluster95% [0.88, 1.11]
+B/A $ ideal-cache    1.19x  cluster95% [1.10, 1.27]
+
+##### H1 large-9001: agent vs toon
+A=agent  B=toon  paired n=239  clusters=8
+isCorrect         acc diff A-B +35.3pp  cluster95% [+20.6,+47.5]  sign-flip p=0.0317  (question-level McNemar 86/1 p=1.14e-24, anti-conservative)  non-inferior@3pp (one-sided 95% lower +23.2): True
+B/A raw tokens      17.16x  cluster95% [5.33, 31.09]
+B/A $ ideal-cache   22.87x  cluster95% [7.25, 40.92]
+
+##### small regime: agent vs toon
+A=agent  B=toon  paired n=717  clusters=24
+isCorrect         acc diff A-B +32.9pp  cluster95% [+25.2,+39.9]  sign-flip p=0.0000  (question-level McNemar 241/4 p=5.27e-66, anti-conservative)  non-inferior@3pp (one-sided 95% lower +26.4): True
+B/A raw tokens       1.67x  cluster95% [1.27, 2.06]
+B/A $ ideal-cache    2.30x  cluster95% [1.73, 2.85]
+
+##### small-9001: agent vs toon-think
+A=agent  B=toon-think  paired n=239  clusters=8
+isCorrect         acc diff A-B  +2.1pp  cluster95% [-1.8,+6.9]  sign-flip p=0.5322  (question-level McNemar 9/4 p=0.267, anti-conservative)  non-inferior@3pp (one-sided 95% lower -1.3): True
+B/A raw tokens       1.92x  cluster95% [1.16, 2.60]
+B/A $ ideal-cache    4.23x  cluster95% [2.69, 5.58]
+
+##### DataBench small tables: agent vs table
+A=agent  B=table  paired n=166  clusters=6
+isCorrect         acc diff A-B +35.6pp  cluster95% [+25.8,+48.8]  sign-flip p=0.0312  (question-level McNemar 65/7 p=6.96e-13, anti-conservative)  non-inferior@3pp (one-sided 95% lower +26.9): True
+B/A raw tokens       1.02x  cluster95% [0.65, 1.53]
+B/A $ ideal-cache    1.48x  cluster95% [0.90, 2.28]
+
+##### secondary six sets: code vs agent
+A=code  B=agent  paired n=1434  clusters=48
+isCorrect         acc diff A-B  +0.4pp  cluster95% [-0.2,+1.1]  sign-flip p=0.2005  (question-level McNemar 13/7 p=0.263, anti-conservative)  non-inferior@3pp (one-sided 95% lower -0.1): True
+B/A raw tokens       2.54x  cluster95% [2.46, 2.61]
+B/A $ ideal-cache    1.52x  cluster95% [1.49, 1.56]
+
+##### secondary six sets: code vs agent-nopreview
+A=code  B=agent-nopreview  paired n=1434  clusters=48
+isCorrect         acc diff A-B  +1.5pp  cluster95% [+0.7,+2.4]  sign-flip p=0.0038  (question-level McNemar 31/9 p=0.00068, anti-conservative)  non-inferior@3pp (one-sided 95% lower +0.8): True
+B/A raw tokens       4.96x  cluster95% [4.70, 5.23]
+B/A $ ideal-cache    2.87x  cluster95% [2.73, 3.02]
+
+##### secondary DataBench: code vs agent
+A=code  B=agent  paired n=1613  clusters=70
+isCorrect         acc diff A-B  -7.5pp  cluster95% [-10.6,-4.7]  sign-flip p=0.0000  (question-level McNemar 41/162 p=3.27e-18, anti-conservative)  non-inferior@3pp (one-sided 95% lower -10.1): False
+B/A raw tokens       4.08x  cluster95% [3.81, 4.40]
+B/A $ ideal-cache    2.31x  cluster95% [2.15, 2.48]
+
+##### secondary DataBench: code vs agent-nopreview
+A=code  B=agent-nopreview  paired n=1613  clusters=70
+isCorrect         acc diff A-B  -1.7pp  cluster95% [-5.2,+1.4]  sign-flip p=0.3494  (question-level McNemar 122/150 p=0.101, anti-conservative)  non-inferior@3pp (one-sided 95% lower -4.6): False
+B/A raw tokens       4.06x  cluster95% [3.52, 4.58]
+B/A $ ideal-cache    2.74x  cluster95% [2.42, 3.04]
+
+##### ablation six sets: code-namesonly vs code
+A=code-namesonly  B=code  paired n=1434  clusters=48
+isCorrect         acc diff A-B  +0.1pp  cluster95% [-0.5,+0.7]  sign-flip p=0.4446  (question-level McNemar 9/7 p=0.804, anti-conservative)  non-inferior@3pp (one-sided 95% lower -0.4): True
+B/A raw tokens       1.13x  cluster95% [1.10, 1.16]
+B/A $ ideal-cache    1.10x  cluster95% [1.08, 1.13]

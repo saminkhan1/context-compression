@@ -134,3 +134,30 @@ Frozen immediately before the first confirmatory run (sha256 prefixes):
    (size alone, 6 test tables, 166 questions), so that arm's claim is scoped to small real tables. Item 3's
    offline estimate stays as a cross-check on the measured large-seed run. harness_db.py changed (cutoff
    constant only). Items 1-2's other cuts stand (no repeats, no ctab2, no native-tool arm).
+
+5. **16 usage-limit errors re-run (2026-11-23).** The harness waited its 12-hour maximum for a *weekly* limit;
+   16 DataBench `agent-nopreview` rows were saved as errors, deleted and re-run (answers, not repeats).
+
+## Results against the pre-registered rules (claude-haiku-4-5)
+
+Full output: `results2/FINAL_STATS.txt` (`final_stats.sh`). Cluster = (set, dataset); intervals are 95% cluster bootstrap.
+
+| Rule | Result | Verdict |
+| --- | --- | --- |
+| H1 accuracy: `agent` > in-context `toon`, large seed 9001 | 97.5% vs 61.9%, +35.3 pp [+20.6, +47.5] | **passed** |
+| H1 tokens: >= 10x fewer, lower bound > 10 | 17.2x [5.3, 31.1] (offline estimate agrees: 51,702 vs measured 51,754 tokens/Q) | **failed** (mean >= 10x, interval not) |
+| H2(a): preview token saving, ideal-cache lower bound >= 1.5 (six TOON-benchmark sets) | 1.89x [1.81, 1.96] (raw 1.96x [1.86, 2.05]) | **passed** |
+| H2(b): preview accuracy, six sets | +1.1 pp [+0.2, +2.1]; sign-flip p = 0.089 | borderline, small |
+| H3: `agent` not > 3 pp below `agent-nopreview` | lower bound +0.3 pp | **passed** |
+| H4: DataBench test, preview accuracy | 86.8% vs 81.0%, +5.8 pp [+4.0, +7.5] | **passed** |
+| H4: DataBench, preview token saving (rule H2(a)) | 1.00x raw [0.88, 1.11]; 1.19x ideal-cache [1.10, 1.27] | **failed** |
+| H4: DataBench in-context `table` (<= 10k-token tables, n = 166) vs `agent` | 52.4% vs 88.0% on the same questions, +35.6 pp [+25.8, +48.8]; tokens 1.02x [0.65, 1.53] | accuracy gap large; no token gap |
+
+Secondary (exploratory): single-shot `code` is non-inferior to `agent` on the six synthetic sets (+0.4 pp
+[-0.2, +1.1], 2.5x fewer raw tokens) but **inferior on DataBench** (-7.5 pp [-10.6, -4.7]). Preview ablation:
+names-only vs full preview, +0.1 pp [-0.5, +0.7], 12% fewer tokens, so the sample rows and types add nothing.
+
+**Unplanned finding that qualifies H1.** In-context TOON with thinking on (`toon-think`, small seed 9001):
+95.0% vs 63.6% with thinking off (+31.0 pp). The agent is not detectably better than thinking-on reading
+(97.1% vs 95.0%, +2.1 pp [-1.8, +6.9]) and uses 1.9x fewer tokens. The large "agent vs reading" accuracy gap is
+therefore measured against thinking-off reading; **thinking-on reading was not tested on large files**.
