@@ -2,7 +2,7 @@
 
 > **Superseded headline (2026-11-23).** The 15x / 41.8x claims below were measured with Claude Code's own tool
 > schema in the agent baseline (about 3,900 fixed tokens per turn) and with thinking off for in-context reading.
-> A controlled, pre-registered study replaced them: see [`PREREGISTRATION.md`](PREREGISTRATION.md) (results at the
+> A controlled, pre-registered study replaced them: see [`REPORT.md`](REPORT.md) and [`PREREGISTRATION.md`](PREREGISTRATION.md) (results at the
 > end) and `results2/FINAL_STATS.txt`. Short version, claude-haiku-4-5 only: the preview halves an agent's cost on
 > synthetic files and adds about 6 pp accuracy on real DataBench tables; reading a 2,000-row file costs about 17x
 > more than an agent run; reading with thinking on closes most of the accuracy gap on small files.

@@ -14,6 +14,8 @@ its answers. Two tools, one rule: **inline small data losslessly, query large da
 
 ## Evidence
 
+**Read the full write-up: [`bench/REPORT.md`](bench/REPORT.md)**, which covers the measurement traps that produced our first headline, the pre-registered results, failure analysis and recommendations. All numbers regenerate from a fresh clone without model calls (`bash bench/final_stats.sh`, `python bench/analysis.py bench/databench`).
+
 Everything here is claude-haiku-4-5 only, measured on the official
 [TOON retrieval benchmark](https://github.com/toon-format/toon/tree/main/benchmarks) (fresh seeds 9001-9003) and on
 [DataBench](https://huggingface.co/datasets/cardiffnlp/databench) (70 real tables, 1,613 questions, official comparator).
@@ -38,7 +40,7 @@ fuller preview (+0.1 pp, 12% fewer tokens).
 | 2,000-row-class files, thinking off | 97.5% at 3,047 tok/Q | 61.9% at 51,754 | **17x fewer tokens** (interval 5-31x; depends on size) |
 | ≤100-row files, thinking off (n = 717) | 97.6% | 64.6% | 1.7x fewer tokens |
 | ≤100-row files, **thinking on** (n = 239) | 97.1% at 3,276 | 95.0% at 6,346 | accuracy gap not detectable (+2.1 pp [-1.8, +6.9]) |
-| Small real tables ≤10k tokens (n = 166) | 88.0% | 52.4% | same token cost |
+| Small real tables ≤10k tokens (n = 166) | 88.0% | 52.4% | same token cost; 42 of 70 DataBench tables are too big to read into a 200k window at all |
 | ≤100-row files, thinking off, **vs JSON** (n = 239, seed 9001) | 97.1% at 3,276 | pretty JSON 61.9% at 9,026; compact JSON 59.8% at 6,128 | 2.7x / 1.9x fewer tokens; TOON (63.6% at 5,385) is not distinguishably more accurate than pretty JSON |
 
 Reading the large files as JSON would cost an estimated 87k (pretty) or 57k (compact) tokens per question against TOON's 52k and the agent's 3k (offline estimate; JSON accuracy was measured on small files only). Thinking-on reading was not tested on large files, so the large-file accuracy gap is against thinking-off reading.
