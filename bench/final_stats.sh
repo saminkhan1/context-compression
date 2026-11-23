@@ -1,5 +1,5 @@
 #!/bin/bash
-cd "$SP/cc/bench"; PY="$SP/venv/bin/python"
+cd "$(dirname "$0")"; PY="${PY:-python3}"   # stdlib only
 S6=(large-9001 large-9002 large-9003 small-9001 small-9002 small-9003); SL=(large-9001 large-9002 large-9003); SS=(small-9001 small-9002 small-9003)
 echo "##### TABLE six TOON sets (3 seeds x 2 regimes)"; $PY study_stats.py --table agent agent-nopreview code code-namesonly --sets "${S6[@]}"
 echo "##### TABLE large regime";  $PY study_stats.py --table agent agent-nopreview code code-namesonly --sets "${SL[@]}"
